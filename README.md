@@ -2,7 +2,7 @@
 
 ## [介绍, 点我查看详情](https://www.notion.so/buidlerdao/DAO-Infra-HackerHouse-eeff60b8c16043fda3a5287ba3ac76a9)
 
-各位 Buidler 大家好，欢迎来到 Global Hackerhouse Shanghai DAO Infra 主题站，十分期待与大家线下相聚、共同创作！BuidlerDAO 与 AntaplaLab 各位伙伴将共同参与，并且我们特邀了 6 位业界顶级导师与大家分享、交流，期待大家满载而归。
+各位 Buidler 大家好，欢迎来到 Global Hackerhouse Shanghai DAO Infra 主题站，十分期待与大家线下相聚、共同创作！BuidlerDAO 与 AntaplaLab 各位伙伴将共同参与，并且我们特邀了 6 位业界顶级导师与大家分享、交流，期待大家满载而归...
 
 
 ## [代码提交]
@@ -33,6 +33,7 @@
 
 6. 最终PR，在 `2023年8月20日上午12:00` 前提交，且各团队自己发起MR请求。
 
+7. [项目参考模块,点我查看详情](./projects/00-proj-template/README.md)
 
 ## 合法合规性
 
