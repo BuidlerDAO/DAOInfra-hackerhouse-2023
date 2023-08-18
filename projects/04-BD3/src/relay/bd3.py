@@ -104,3 +104,20 @@ class DashboardAPIHandler(tornado.web.RequestHandler):
         self.add_header('access-control-allow-origin', '*')
         self.finish({'users': users_list, 'total': total})
 
+class ProjectsAPIHandler(tornado.web.RequestHandler):
+    def get(self):
+        db_conn = database.get_conn()
+        event_rows = db_conn.iteritems()
+        event_rows.seek(b'profile_')
+        results = {}
+        for key, profile_json in event_rows:
+            if not key.startswith(b'profile_'):
+                break
+            # print(key, profile_json)
+            profile = tornado.escape.json_decode(profile_json)
+            if 'role' in profile and profile['role'] == 'project':
+                results[key.decode('utf8').replace('profile_', '')] = profile
+
+        self.add_header('access-control-allow-origin', '*')
+        self.finish(results)
+

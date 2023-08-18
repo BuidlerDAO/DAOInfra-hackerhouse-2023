@@ -244,21 +244,6 @@ class ProfileAPIHandler(tornado.web.RequestHandler):
         else:
             self.finish({})
 
-class UsersAPIHandler(tornado.web.RequestHandler):
-    def get(self):
-        db_conn = database.get_conn()
-        event_rows = db_conn.iteritems()
-        event_rows.seek(b'profile_')
-        results = {}
-        for event_key, event_id in event_rows:
-            if not event_key.startswith(b'profile_'):
-                break
-            print(event_key, event_id)
-            results[event_key.decode('utf8').replace('profile_', '')] = tornado.escape.json_decode(event_id)
-            #content = db_conn.get(b'profile_%s' % (addr.lower().encode('utf8')))
-        self.add_header('access-control-allow-origin', '*')
-        self.finish(results)
-
 class FollowingAPIHandler(tornado.web.RequestHandler):
     def get(self):
         db_conn = database.get_conn()
@@ -313,7 +298,7 @@ class Application(tornado.web.Application):
                 (r"/dashboard", bd3.DashboardHandler),
                 (r"/api/dashboard", bd3.DashboardAPIHandler),
 
-                (r"/api/projects", UsersAPIHandler),
+                (r"/api/projects", bd3.ProjectsAPIHandler),
                 (r"/", MainHandler),
             ]
         settings = {"debug": True}
