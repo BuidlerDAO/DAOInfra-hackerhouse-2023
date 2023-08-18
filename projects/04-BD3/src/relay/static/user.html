@@ -27,8 +27,21 @@
   <br/>
   <br/>
 
+  Attest To: <span id="attest_to"></span>
+  <br/>
+  <select id="attest_schemas">
+  </select>
+  <!-- <textarea id="pm"></textarea> -->
+  <br/>
+  <!-- <span id="pm_event_hash_id"></span> -->
+  <br/>
+  <input type="button" value="Attest" id="attest_sig_btn"/>
+  <br/>
+  <br/>
+  <br/>
+  <br/>
 
-  To: <span id="pm_to"></span>
+  PM To: <span id="pm_to"></span>
   <br/>
   <textarea id="pm"></textarea>
   <br/>
@@ -56,6 +69,8 @@ const reply_to = document.getElementById('reply_to');
 const content = document.getElementById('content');
 const content_event_json = document.getElementById('content_event_json');
 const content_sig_btn = document.getElementById('content_sig_btn');
+
+const attest_schemas = document.getElementById('attest_schemas');
 
 const pm_to = document.getElementById('pm_to');
 const pm = document.getElementById('pm');
@@ -120,7 +135,7 @@ window.onload = async () => {
 
     // Listen for messages
     socket.addEventListener("message", (event) => {
-      console.log("Message from server ", event.data);
+      // console.log("Message from server ", event.data);
       const e = JSON.parse(event.data);
       if (e[0] != 'EVENT' || e[2]['kind'] != 1) {
         return
@@ -236,7 +251,13 @@ window.onload = async () => {
 
     });
 
-
+    const response = await fetch('/api/attest_schemas');
+    const schemas = await response.json();
+    attest_schemas.innerHTML = '';
+    for(var i in schemas['schemas']){
+      console.log(schemas['schemas'][i]);
+      attest_schemas.innerHTML += `<option value='${i}'>${schemas['schemas'][i].toString()}</option>`;
+    }
   }
 }
 

@@ -121,3 +121,10 @@ class ProjectsAPIHandler(tornado.web.RequestHandler):
         self.add_header('access-control-allow-origin', '*')
         self.finish(results)
 
+class AttestUserAPIHandler(tornado.web.RequestHandler):
+    def get(self):
+        db_conn = database.get_conn()
+
+class AttestEventAPIHandler(tornado.web.RequestHandler):
+    def get(self):
+        db_conn = database.get_conn()

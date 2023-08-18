@@ -52,7 +52,7 @@ const content_sig_btn = document.getElementById('content_sig_btn');
 
 window.onload = async () => {
 
-  const response = await fetch('https://humanpow.bitpow.org/api/dashboard', {
+  const response = await fetch('https://api.web3bd.network/api/dashboard', {
     method: 'GET',
     // mode: 'cors',
   });
@@ -183,7 +183,6 @@ window.onload = async () => {
         content_event_json.innerText = 'empty!'
       }
     }
-
 
 
     messages.addEventListener('click', async (evt) => {

@@ -207,7 +207,7 @@ class RelayHandler(tornado.websocket.WebSocketHandler):
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
-        self.redirect('/contributions')
+        self.redirect('/profile')
 
 class TimelineHandler(tornado.web.RequestHandler):
     def get(self):
@@ -258,12 +258,12 @@ class FollowedAPIHandler(tornado.web.RequestHandler):
         content = db_conn.get(b'profile_%s' % (addr.encode('utf8')))
         self.finish(tornado.escape.json_decode(content))
 
-class AttestSchemaAPIHandler(tornado.web.RequestHandler):
+class AttestSchemasAPIHandler(tornado.web.RequestHandler):
     def get(self):
-        self.finish({
-            1: ['meet offline with', '$user'],
-            2: ['$user', 'is the founder of', '$project'],
-            3: ['$user', 'is the', '$role', 'of', '$project'],
+        self.finish({'schemas':
+            [ ['meet offline with', '$user'],
+              ['$user', 'is the founder of', '$project'],
+              ['$user', 'is the', '$role', 'of', '$project'], ]
         })
 
 
@@ -292,13 +292,16 @@ class Application(tornado.web.Application):
                 # (r"/api/followed", FollowedAPIHandler),
                 (r"/api/test", TestAPIHandler),
 
-                (r"/contributions", bd3.ContributionsHandler),
-                (r"/api/contributors", bd3.ContributorsAPIHandler),
-                (r"/contributors", bd3.ContributorsHandler),
-                (r"/dashboard", bd3.DashboardHandler),
-                (r"/api/dashboard", bd3.DashboardAPIHandler),
+                # (r"/contributions", bd3.ContributionsHandler),
+                # (r"/api/contributors", bd3.ContributorsAPIHandler),
+                # (r"/contributors", bd3.ContributorsHandler),
+                # (r"/dashboard", bd3.DashboardHandler),
+                # (r"/api/dashboard", bd3.DashboardAPIHandler),
 
                 (r"/api/projects", bd3.ProjectsAPIHandler),
+                (r"/api/attest_user", bd3.AttestUserAPIHandler),
+                (r"/api/attest_event", bd3.AttestEventAPIHandler),
+                (r"/api/attest_schemas", AttestSchemasAPIHandler),
                 (r"/", MainHandler),
             ]
         settings = {"debug": True}
