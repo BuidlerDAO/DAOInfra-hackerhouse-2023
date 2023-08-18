@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>Yestr user</title>
+    <title>BD3 user</title>
 </head>
 
 <body>
@@ -9,11 +9,22 @@
   <span id="ethereum_address"></span>
   <br/>
   <br/>
-  <input type="text" id="profile_name" />
+  <input type="text" id="profile_name" placeholder="Name"/>
   <br/>
-  <textarea id="profile_about"></textarea>
+  <input type="radio" name="profile_role" value="user" /> individual
+  <input type="radio" name="profile_role" value="project" /> project
   <br/>
-  <input type="text" id="profile_pic_url" />
+  <textarea id="profile_about" placeholder="about me"></textarea>
+  <br/>
+  <input type="text" id="profile_pic_url" placeholder="profile pic or logo url"/>
+  <br/>
+  <input type="text" id="video_url" placeholder="video url"/>
+  <br/>
+  <input type="text" id="website_url" placeholder="website url"/>
+  <br/>
+  <input type="text" id="twitter_handle" placeholder="twitter handle"/>
+  <br/>
+  <br/>
   <input type="button" value="Save" id="profile_save_btn" />
   <br/>
   <br/>
@@ -36,6 +47,7 @@ const profile_name = document.getElementById('profile_name');
 const profile_about = document.getElementById('profile_about');
 const profile_pic_url = document.getElementById('profile_pic_url');
 const profile_save_btn = document.getElementById('profile_save_btn');
+// const profile_role = document.querySelector('input[name="profile_role"]:checked');
 
 
 window.onload = async () => {
@@ -79,6 +91,10 @@ window.onload = async () => {
       });
     }
 
+    const response = await fetch(`/api/profile?addr=${ethereum.selectedAddress}`);
+    const data = await response.json();
+    console.log(data);
+
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
 
@@ -94,14 +110,25 @@ window.onload = async () => {
 
     profile_save_btn.onclick = async (evt) => {
       console.log(profile_name.value);
+      // console.log(document.querySelector('input[id="profile_name"]'));
       console.log(profile_about.value);
+      console.log(document.querySelector('input[name="profile_role"]:checked').value);
+      // console.log(profile_role);
+      // console.log(profile_role.value);
       console.log(profile_pic_url.value);
       const name = profile_name.value;
       const about = profile_about.value;
+      const role = document.querySelector('input[name="profile_role"]:checked').value;
       const picture = profile_pic_url.value;
 
       const timestamp = parseInt(Date.now()/1000);
-      const json = JSON.stringify([0, ethereum.selectedAddress, timestamp, 0, [], {name: name, about: about, picture: picture}]);
+      const content = {
+          name: name,
+          role: role,
+          about: about,
+          picture: picture
+        }
+      const json = JSON.stringify([0, ethereum.selectedAddress, timestamp, 0, [], content]);
       console.log(json);
       const event_hash_id = ethers.utils.sha256(new TextEncoder().encode(json));
 
@@ -111,7 +138,7 @@ window.onload = async () => {
         "created_at": timestamp,
         "kind": 0,
         "tags": [],
-        "content": {name: name, about: about, picture: picture},
+        "content": content,
       }
 
       if (name) {
