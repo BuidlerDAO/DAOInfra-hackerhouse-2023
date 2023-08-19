@@ -1470,7 +1470,7 @@ const ScriptEditor: FC = () => {
                                                 >
                                                     <Select placeholder="Select address source" style={{width: 470, textAlign: 'center'}}>
                                                         {
-                                                            (getSubScript(fromStep)?.element.type == 'event' || !getSubScript(fromStep)?.element.constant) ?  // 事件和write交易需要从inputs里读取数据，而view接口从outputs里读数据
+                                                            (getSubScript(fromStep)?.element.type == 'event' || !getSubScript(fromStep)?.element.constant || !getSubScript(fromStep)?.element.stateMutability == 'view') ?  // 事件和write交易需要从inputs里读取数据，而view接口从outputs里读数据
                                                             getSubScript(fromStep)?.element.inputs.map((input: any) => {
                                                                 if (input.type == 'address') {
                                                                     return <Option value={input.name}>value of input parameter '{input.name}' in {getSubScript(fromStep)?.element.name}</Option>;
@@ -1624,7 +1624,7 @@ const ScriptEditor: FC = () => {
                             {   
                                 isABIOK(currentChain, contractAddr) ? 
                                     contractABIInfo[currentChain][contractAddr].map((element: any) => {
-                                        if (element.type == 'function' && !element.constant) {
+                                        if (element.type == 'function' && !element.constant && element.stateMutability != 'view') {
                                             var parameters = '';
                                             element.inputs.map((input: any) => {
                                                 parameters += input.internalType + ' ' + input.name + ', ';
@@ -1741,7 +1741,7 @@ const ScriptEditor: FC = () => {
                             {   
                                 isABIOK(currentChain, contractAddr) ? 
                                     contractABIInfo[currentChain][contractAddr].map((element: any) => {
-                                        if (element.type == 'function' && element.constant) {
+                                        if (element.type == 'function' && (element.constant || element.stateMutability == 'view')) {
                                             var parameters = '';
                                             element.inputs.map((input: any) => {
                                                 parameters += input.internalType + ' ' + input.name + ', ';
@@ -1857,7 +1857,8 @@ const ScriptEditor: FC = () => {
                                                 <Select placeholder="Select input source" style={{width: 470, textAlign: 'center', marginBottom: 60}}>
                                                     {
                                                         (getSubScript(subscriptName)?.element.type == 'event' 
-                                                        || !getSubScript(subscriptName)?.element.constant) ?  // 事件和write交易需要从inputs里读取数据，而view接口从outputs里读数据
+                                                        //|| !getSubScript(subscriptName)?.element.constant
+                                                        || getSubScript(subscriptName)?.element.stateMutability != 'view') ?  // 事件和write交易需要从inputs里读取数据，而view接口从outputs里读数据
                                                         getSubScript(subscriptName)?.element.inputs.map((input: any, index: number) => {
                                                             if (input.type == 'address') {
                                                                 const paraName = isEmptyObj(input.name) ? '#' + index : input.name;

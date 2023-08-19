@@ -1,0 +1,54 @@
+{
+    "name": "monitor eth",
+    "desc": "monitor eth price on uniswap",
+    "createdTime": 1692338940252,
+    "subScripts": {
+        "uniswap1111": {
+            "type": "rFunc",
+            "chainContractConfig": {
+                "title": "uniswap1111",
+                "chain": "5",
+                "from": {
+                    "valueType": "constant",
+                    "address": "0x0000000000000000000000000000000000000000"
+                },
+                "contractAddr": "0x4eA18bE9d846a0764823a58475B1c3552d6767f4"
+            },
+            "functionSelectedConfig": {
+                "function": "{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}"
+            },
+            "dependencyConfig": {
+                "dependency": [
+                    {
+                        "subscriptName": "timer",
+                        "compareValue": "2023-08-18T15:08:06.722Z",
+                        "compareType": ">"
+                    }
+                ]
+            }
+        },
+        "eth": {
+            "type": "rCex",
+            "rCexConfig": {
+                "title": "eth",
+                "whichCex": "Binance",
+                "tradingPair": "ETHUSDT"
+            },
+            "dependencyConfig": {
+                "dependency": [
+                    {
+                        "subscriptName": "uniswap1111",
+                        "parameter": "#0",
+                        "compareType": "==",
+                        "compareValue": 1.3409410632462022e+47
+                    }
+                ]
+            }
+        }
+    },
+    "executionOrder": [
+        "uniswap1111",
+        "eth"
+    ],
+    "updatedTime": 1692371538936
+}

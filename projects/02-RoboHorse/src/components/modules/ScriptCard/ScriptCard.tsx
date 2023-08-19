@@ -20,6 +20,7 @@ import {
   Avatar,
   Checkbox
 } from '@chakra-ui/react';
+import { GrCopy } from 'react-icons/gr';
 import { TbDeviceHeartMonitor } from 'react-icons/tb';
 import { MdOutlineDescription, MdOutlineDeleteForever } from 'react-icons/md';
 import { SiBlockchaindotcom } from 'react-icons/si';
@@ -34,6 +35,7 @@ import { evmChainIds, accessManagerAddr } from 'utils/config';
 import { ETHLogo, BSCLogo, AvaxLogo, PolygonLogo, ArbitrumLogo, OptimismLogo } from 'utils/chainLogos';
 import AccessManager from 'abi/accessManager.json';
 import { getEllipsisTxt } from "utils/format";
+import copy from 'copy-to-clipboard';
 
 type ScriptInfo = {
   name: string;
@@ -71,9 +73,11 @@ const ScriptCard: FC<ScriptInfo> = ({ name, desc, createdTime, scriptObj }) => {
     const chainIds: any = {};
     entries.map((entry: any) => {
       const subScript = entry[1];
-      const chainId = subScript.chainContractConfig.chain;      
-      if (isEmptyObj(chainIds[chainId])) {
-        chainIds[chainId] = true;
+      if (subScript.chainContractConfig) {
+        const chainId = subScript.chainContractConfig.chain;      
+        if (isEmptyObj(chainIds[chainId])) {
+          chainIds[chainId] = true;
+        }
       }
     })
     chainIdList = Object.keys(chainIds).map((chainId: string) => parseInt(chainId));
@@ -195,6 +199,18 @@ const ScriptCard: FC<ScriptInfo> = ({ name, desc, createdTime, scriptObj }) => {
   const saveOnBlockchain = (e: any) => {
     e.stopPropagation();
     modal1.onOpen();
+  }
+
+  const copy2Clipboard = (e: any) => {
+    e.stopPropagation();
+    copy(JSON.stringify(scriptObj));
+    toast({
+      title: 'Success',
+      description: "Script content has been copied",
+      status: 'success',
+      position: 'bottom-right',
+      isClosable: true,
+    })
   }
 
   const saveScript = () => {
@@ -330,6 +346,14 @@ const ScriptCard: FC<ScriptInfo> = ({ name, desc, createdTime, scriptObj }) => {
           </Box>
           <Box as="h4" noOfLines={1} fontSize="sm">   
             <HStack>
+              <Tooltip label={"copy the content of this script to clipboard"}>
+                <Button 
+                  size='xs'
+                  colorScheme='teal' 
+                  variant='outline'
+                  leftIcon={<GrCopy />}
+                  onClick={(e: any) => copy2Clipboard(e)}/>
+              </Tooltip>
               <Tooltip label={"number of subscripts"}>
                 <Button 
                   size='xs'
