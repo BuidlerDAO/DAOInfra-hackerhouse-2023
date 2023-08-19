@@ -263,7 +263,8 @@ class AttestSchemasAPIHandler(tornado.web.RequestHandler):
     def get(self):
         self.finish({'schemas':
             [ ['I meet offline with', '$user'],
-              ['$user', 'is the', '$role', 'of', '$project'], ]
+              ['$user', 'is the', '$role', 'of', '$project'],
+              ['$user', 'is the expert of', '$skill'], ]
         })
 
 

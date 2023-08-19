@@ -283,13 +283,12 @@ window.onload = async () => {
       for(var j in schemas['schemas'][i]){
         console.log(schemas['schemas'][i][j]);
         if(schemas['schemas'][i][j] == '$user'){
-          //console.log('$ user');
           attest_params.innerHTML += `<input id='attest_params_${schemas['schemas'][i][j]}' value='${user_id}' disabled><br/>`;
+
         }else if(schemas['schemas'][i][j] == '$project'){
-          //console.log('$ project');
           attest_params.innerHTML += attest_projects_html;
+
         }else if(schemas['schemas'][i][j] == '$role'){
-          //console.log('$ role');
           attest_params.innerHTML += `<select id='attest_params_${schemas['schemas'][i][j]}'>
             <option value='Founder'>Founder</option>
             <option value='CEO'>CEO</option>
@@ -297,6 +296,14 @@ window.onload = async () => {
             <option value='CTO'>CTO</option>
             <option value='BD'>BD</option>
             <option value='Marketing'>Marketing</option>
+          </select><br/>`;
+
+        }else if(schemas['schemas'][i][j] == '$skill'){
+          attest_params.innerHTML += `<select id='attest_params_${schemas['schemas'][i][j]}'>
+            <option value='python'>Python</option>
+            <option value='javascript'>JavaScript</option>
+            <option value='nodejs'>NodeJS</option>
+            <option value='java'>Java</option>
           </select><br/>`;
         }
       }
