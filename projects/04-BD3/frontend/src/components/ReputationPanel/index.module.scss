@@ -1,0 +1,32 @@
+  .reputationContainer {
+    border: 1px solid #e0e0e0;
+    padding: 16px 16px;
+    border-radius: 8px;
+    .reputationItem {
+      height: 60px;
+      .reputationItemTitle {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+    }
+  }
+  .modalContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    .contentContainer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      border: 1px solid #000;
+      padding: 16px 48px;
+      border-radius: 8px;
+      margin-top: 8px;
+      .dialogButton {
+        background-color: #000 !important;
+      }
+    }
+  }

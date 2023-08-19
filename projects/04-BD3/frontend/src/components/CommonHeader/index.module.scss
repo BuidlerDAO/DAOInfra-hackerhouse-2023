@@ -1,0 +1,13 @@
+.logoText {
+  width: 66px;
+  height: 66px;
+  background-image: url('../../assets/img/logo.png');
+  background-size: contain;
+  &:hover {
+    cursor: pointer;
+  }
+}
+
+.PostProjectButton {
+  background-color: #000000 !important;
+}
