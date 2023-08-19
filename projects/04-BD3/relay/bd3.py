@@ -128,3 +128,7 @@ class AttestUserAPIHandler(tornado.web.RequestHandler):
 class AttestEventAPIHandler(tornado.web.RequestHandler):
     def get(self):
         db_conn = database.get_conn()
+
+class ProjectsHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.render('static/projects.html')

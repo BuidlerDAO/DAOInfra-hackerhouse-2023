@@ -1,33 +1,100 @@
+<!DOCTYPE html>
 <html>
 <head>
-    <title>BD3 user</title>
+    <title>BD3 profile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/static/bulma/bulma-rtl.min.css">
 </head>
 
 <body>
+  <nav class="navbar" role="navigation" aria-label="main navigation">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://web3bd.network">
+        <span style="font-size: 24px;">BD3</span>
+      </a>
 
-  <input type="button" value="Connect Metamask" id="connect_metamask_btn" />
-  <span id="ethereum_address"></span>
-  <br/>
-  <br/>
-  <input type="text" id="profile_name" placeholder="Name"/>
-  <br/>
-  <input type="radio" name="profile_role" value="user" /> individual
-  <input type="radio" name="profile_role" value="project" /> project
-  <br/>
-  <textarea id="profile_about" placeholder="about me"></textarea>
-  <br/>
-  <input type="text" id="profile_pic_url" placeholder="profile pic or logo url"/>
-  <br/>
-  <input type="text" id="video_url" placeholder="video url"/>
-  <br/>
-  <input type="text" id="website_url" placeholder="website url"/>
-  <br/>
-  <input type="text" id="twitter_handle" placeholder="twitter handle"/>
-  <br/>
-  <br/>
-  <input type="button" value="Save" id="profile_save_btn" />
-  <br/>
-  <br/>
+      <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </a>
+    </div>
+
+    <div id="navbarBasicExample" class="navbar-menu">
+      <div class="navbar-start">
+        <!-- <a class="navbar-item">
+          Home
+        </a>
+
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link">
+            More
+          </a>
+
+          <div class="navbar-dropdown">
+            <a class="navbar-item">
+              About
+            </a>
+            <a class="navbar-item">
+              Jobs
+            </a>
+            <a class="navbar-item">
+              Contact
+            </a>
+            <hr class="navbar-divider">
+            <a class="navbar-item">
+              Report an issue
+            </a>
+          </div>
+        </div> -->
+      </div>
+
+      <div class="navbar-end">
+        <div class="navbar-item">
+          <div class="buttons">
+            <!-- <a class="button is-primary">
+              <strong>Sign up</strong>
+            </a>
+            <a class="button is-light">
+              Log in
+            </a> -->
+            <input type="button" value="Connect Metamask" id="connect_metamask_btn" />
+            <span id="ethereum_address"></span>
+        </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+
+  <section class="section">
+    <div class="container">
+      <h2 class="title">Profile</h2>
+      <p class="subtitle">
+        <br/>
+        <br/>
+        <input type="text" id="profile_name" placeholder="Name"/>
+        <br/>
+        <input type="radio" name="profile_role" value="user" /> individual
+        <input type="radio" name="profile_role" value="project" /> project
+        <br/>
+        <textarea id="profile_about" placeholder="about me"></textarea>
+        <br/>
+        <input type="text" id="profile_pic_url" placeholder="profile pic or logo url"/>
+        <br/>
+        <input type="text" id="video_url" placeholder="video url"/>
+        <br/>
+        <input type="text" id="website_url" placeholder="website url"/>
+        <br/>
+        <input type="text" id="twitter_handle" placeholder="twitter handle"/>
+        <br/>
+        <br/>
+        <input type="button" value="Save" id="profile_save_btn" />
+        <br/>
+        <br/>
+      </p>
+    </div>
+  </section>
 
 </body>
 
@@ -94,6 +161,15 @@ window.onload = async () => {
     const response = await fetch(`/api/profile?addr=${ethereum.selectedAddress}`);
     const data = await response.json();
     console.log(data);
+    profile_name.value = data['name'];
+    profile_about.innerText = data['about'];
+    profile_pic_url.value = data['picture'];
+    console.log(document.querySelector('input[name="profile_role"][value="project"]'));
+    if(data['role'] == 'project'){
+      document.querySelector('input[name="profile_role"][value="project"]').checked = true;
+    }else{
+      document.querySelector('input[name="profile_role"][value="user"]').checked = true;
+    }
 
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
@@ -112,13 +188,15 @@ window.onload = async () => {
       console.log(profile_name.value);
       // console.log(document.querySelector('input[id="profile_name"]'));
       console.log(profile_about.value);
-      console.log(document.querySelector('input[name="profile_role"]:checked').value);
       // console.log(profile_role);
       // console.log(profile_role.value);
       console.log(profile_pic_url.value);
       const name = profile_name.value;
       const about = profile_about.value;
-      const role = document.querySelector('input[name="profile_role"]:checked').value;
+      const role = document.querySelector('input[name="profile_role"]:checked');
+      if(role){
+        console.log(role.value);
+      }
       const picture = profile_pic_url.value;
 
       const timestamp = parseInt(Date.now()/1000);
