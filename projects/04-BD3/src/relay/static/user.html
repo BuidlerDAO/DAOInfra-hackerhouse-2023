@@ -76,6 +76,8 @@ const attest_schemas = document.getElementById('attest_schemas');
 const attest_params = document.getElementById('attest_params');
 const attest_statement = document.getElementById('attest_statement');
 const attest_to = document.getElementById('attest_to');
+const attest_sig_btn = document.getElementById('attest_sig_btn');
+var attest_statement_data = [];
 
 const pm_to = document.getElementById('pm_to');
 const pm = document.getElementById('pm');
@@ -274,7 +276,7 @@ window.onload = async () => {
       attest_schemas.innerHTML += `<option value='${i}'>${schemas['schemas'][i].toString()}</option>`;
     }
 
-    attest_schemas.onchange = (evt) => {
+    attest_schemas.onclick = (evt) => {
       console.log(evt.target.value);
       const i = parseInt(evt.target.value);
       attest_params.innerHTML = '';
@@ -289,25 +291,20 @@ window.onload = async () => {
         }else if(schemas['schemas'][i][j] == '$role'){
           //console.log('$ role');
           attest_params.innerHTML += `<select id='attest_params_${schemas['schemas'][i][j]}'>
-            <option value='founder'>Founder</option>
-            <option value='ceo'>CEO</option>
-            <option value='coo'>COO</option>
-            <option value='cto'>CTO</option>
-            <option value='bd'>BD</option>
-            <option value='marketing'>Marketing</option>
+            <option value='Founder'>Founder</option>
+            <option value='CEO'>CEO</option>
+            <option value='COO'>COO</option>
+            <option value='CTO'>CTO</option>
+            <option value='BD'>BD</option>
+            <option value='Marketing'>Marketing</option>
           </select><br/>`;
-
-          //const param = document.querySelector(`select[id='attest_params_${schemas['schemas'][i][j]}']`);
-          //console.log(param);
-          //param.onchange = () => {
-          //  console.log(param);
-          //}
         }
       }
     }
 
-    attest_params.addEventListener("change", () => {
+    attest_params.addEventListener("click", () => {
       var attest_statement_text = '';
+      attest_statement_data = [];
       console.log(schemas['schemas'][attest_schemas.value]);
       for(var i in schemas['schemas'][attest_schemas.value]){
         if(schemas['schemas'][attest_schemas.value][i][0] == '$'){
@@ -315,12 +312,40 @@ window.onload = async () => {
           const param = document.querySelector(`[id='attest_params_${schemas['schemas'][attest_schemas.value][i]}']`);
           console.log(param);
           attest_statement_text += param.value + ' ';
+          attest_statement_data.push(param.value);
         }else{
           attest_statement_text += schemas['schemas'][attest_schemas.value][i] + ' ';
+          attest_statement_data.push(schemas['schemas'][attest_schemas.value][i]);
         }
       }
       attest_statement.innerText = attest_statement_text;
     });
+
+    attest_sig_btn.onclick = async (evt) => {
+      const timestamp = parseInt(Date.now()/1000);
+      const tags = [['attest', parseInt(attest_schemas.value), attest_statement_data]];
+      const json = JSON.stringify([0, ethereum.selectedAddress, timestamp, 3, tags, '']);
+      console.log(json);
+      const event_hash = ethers.utils.sha256(new TextEncoder().encode(json));
+
+      const attest_event = {
+        "id": event_hash,
+        "pubkey": ethereum.selectedAddress,
+        "created_at": timestamp,
+        "kind": 3,
+        "tags": tags,
+        "content": '',
+      }
+
+      const sig = await ethereum.request({
+        method: "personal_sign",
+        params: [ethers.utils.hexlify(new TextEncoder().encode(json)), ethereum.selectedAddress]
+      });
+      attest_event['sig'] = sig;
+      console.log(attest_event);
+      socket.send(JSON.stringify(['EVENT', attest_event]));
+
+    };
   }
 }
 

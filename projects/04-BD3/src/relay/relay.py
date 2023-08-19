@@ -195,7 +195,8 @@ class RelayHandler(tornado.websocket.WebSocketHandler):
 
                     elif tag[0] == 'attest':
                         print('attest', tag)
-                        tweet_event_id = tag[1]
+                        attest_type = tag[1]
+                        attest_data = tag[2]
 
             print('data', data)
             db_conn.put(b'event_%s' % (event_id.encode('utf8'), ), data.encode('utf8'))
