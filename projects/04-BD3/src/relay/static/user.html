@@ -33,6 +33,8 @@
   </select>
   <!-- <textarea id="pm"></textarea> -->
   <br/>
+  <div id='attest_params'>
+  </div>
   <!-- <span id="pm_event_hash_id"></span> -->
   <br/>
   <input type="button" value="Attest" id="attest_sig_btn"/>
@@ -71,6 +73,8 @@ const content_event_json = document.getElementById('content_event_json');
 const content_sig_btn = document.getElementById('content_sig_btn');
 
 const attest_schemas = document.getElementById('attest_schemas');
+const attest_params = document.getElementById('attest_params');
+const attest_to = document.getElementById('attest_to');
 
 const pm_to = document.getElementById('pm_to');
 const pm = document.getElementById('pm');
@@ -78,6 +82,7 @@ const pm_event_hash_id = document.getElementById('pm_event_hash_id');
 const pm_sig_btn = document.getElementById('pm_sig_btn');
 
 pm_to.innerText = user_id;
+attest_to.innerText = user_id;
 
 window.onload = async () => {
   if (typeof window.ethereum !== 'undefined') {
@@ -251,6 +256,15 @@ window.onload = async () => {
 
     });
 
+    const projects_response = await fetch('/api/projects');
+    const projects_data = await projects_response.json();
+    var attest_projects_html = '<select id="attest_params_$project">';
+    for(var i in projects_data){
+      console.log(projects_data[i]);
+      attest_projects_html += `<option value='${i}'>${projects_data[i]['name']}</option>`;
+    }
+    attest_projects_html += '</select>';
+
     const response = await fetch('/api/attest_schemas');
     const schemas = await response.json();
     attest_schemas.innerHTML = '';
@@ -258,6 +272,33 @@ window.onload = async () => {
       console.log(schemas['schemas'][i]);
       attest_schemas.innerHTML += `<option value='${i}'>${schemas['schemas'][i].toString()}</option>`;
     }
+
+    attest_schemas.onchange = (evt) => {
+      console.log(evt.target.value);
+      const i = parseInt(evt.target.value);
+      attest_params.innerHTML = '';
+      for(var j in schemas['schemas'][i]){
+        console.log(schemas['schemas'][i][j]);
+        if(schemas['schemas'][i][j] == '$user'){
+          console.log('$ user');
+          attest_params.innerHTML += `<input id='attest_params_${schemas['schemas'][i][j]}' value='${user_id}' disabled><br/>`;
+        }else if(schemas['schemas'][i][j] == '$project'){
+          console.log('$ project');
+          attest_params.innerHTML += attest_projects_html;
+        }else if(schemas['schemas'][i][j] == '$role'){
+          console.log('$ role');
+          attest_params.innerHTML += `<select id='attest_params_${schemas['schemas'][i][j]}'>
+            <option value='founder'>Founder</option>
+            <option value='ceo'>CEO</option>
+            <option value='coo'>COO</option>
+            <option value='cto'>CTO</option>
+            <option value='bd'>BD</option>
+            <option value='marketing'>Marketing</option>
+          </select><br/>`;
+        }
+      }
+    }
+
   }
 }
 

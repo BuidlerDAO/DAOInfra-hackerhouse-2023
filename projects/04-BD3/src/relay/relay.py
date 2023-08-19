@@ -261,8 +261,7 @@ class FollowedAPIHandler(tornado.web.RequestHandler):
 class AttestSchemasAPIHandler(tornado.web.RequestHandler):
     def get(self):
         self.finish({'schemas':
-            [ ['meet offline with', '$user'],
-              ['$user', 'is the founder of', '$project'],
+            [ ['I meet offline with', '$user'],
               ['$user', 'is the', '$role', 'of', '$project'], ]
         })
 
