@@ -70,6 +70,20 @@
       <section class="section">
         <div class="container">
           <h2 class="title">Project</h2>
+
+          <span id="profile_name" placeholder="Name"></span>
+          <br/>
+          <br/>
+          <div id="profile_about" placeholder="about me"></div>
+          <br/>
+          <span id="profile_pic_url" placeholder="profile pic or logo url"></span>
+          <br/>
+          <span id="video_url" placeholder="video url"></span>
+          <br/>
+          <span id="website_url" placeholder="website url"></span>
+          <br/>
+          <span id="twitter_handle" placeholder="twitter handle"></span>
+
           <div id="messages"></div>
 
           Attest To: <span id="attest_to"></span>
@@ -416,6 +430,14 @@ window.onload = async () => {
 
     };
   }
+
+  const response = await fetch(`/api/profile?addr=${user_id}`);
+  const data = await response.json();
+  console.log(data);
+  profile_name.innerText = data['name'];
+  profile_about.innerText = data['about'];
+  profile_pic_url.innerText = data['picture'];
+
 }
 
 

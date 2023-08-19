@@ -28,28 +28,28 @@ class DashboardHandler(tornado.web.RequestHandler):
     def get(self):
         self.render('static/dashboard.html')
 
-class ContributorsAPIHandler(tornado.web.RequestHandler):
-    def get(self):
-        db_conn = database.get_conn()
-        address_rows = db_conn.iteritems()
-        address_rows.seek(b'DAO_lxdao_')
-        users = []
-        for address_key, _ in address_rows:
-            if not address_key.startswith(b'DAO_lxdao_'):
-                break
+# class ContributorsAPIHandler(tornado.web.RequestHandler):
+#     def get(self):
+#         db_conn = database.get_conn()
+#         address_rows = db_conn.iteritems()
+#         address_rows.seek(b'DAO_lxdao_')
+#         users = []
+#         for address_key, _ in address_rows:
+#             if not address_key.startswith(b'DAO_lxdao_'):
+#                 break
 
-            addr = address_key.decode('utf8').replace('DAO_lxdao_', '').lower()
-            print(addr, b'profile_%s' % (addr.encode('utf8')))
-            profile_json = db_conn.get(b'profile_%s' % (addr.encode('utf8')))
-            print(profile_json)
-            if profile_json:
-                profile = tornado.escape.json_decode(profile_json)
-                profile['addr'] = addr
-                users.append(profile)
-            else:
-                users.append({'addr': addr})
+#             addr = address_key.decode('utf8').replace('DAO_lxdao_', '').lower()
+#             print(addr, b'profile_%s' % (addr.encode('utf8')))
+#             profile_json = db_conn.get(b'profile_%s' % (addr.encode('utf8')))
+#             print(profile_json)
+#             if profile_json:
+#                 profile = tornado.escape.json_decode(profile_json)
+#                 profile['addr'] = addr
+#                 users.append(profile)
+#             else:
+#                 users.append({'addr': addr})
 
-        self.finish({'users': users})
+#         self.finish({'users': users})
 
 class DashboardAPIHandler(tornado.web.RequestHandler):
     def get(self):
@@ -129,6 +129,23 @@ class AttestEventAPIHandler(tornado.web.RequestHandler):
     def get(self):
         db_conn = database.get_conn()
 
+class UserHandler(tornado.web.RequestHandler):
+    def get(self):
+        addr = self.get_argument('addr')
+        db_conn = database.get_conn()
+        profile_json = db_conn.get(('profile_%s' % addr).encode('utf8'))
+        print(profile_json)
+        if profile_json:
+            profile = tornado.escape.json_decode(profile_json)
+            if 'role' in profile and profile['role'] == 'project':
+                self.redirect('/project?addr=%s' % addr)
+
+        self.render('static/user.html')
+
+class UsersHndler(tornado.web.RequestHandler):
+    def get(self):
+        self.render('static/users.html')
+
 class ProjectsHandler(tornado.web.RequestHandler):
     def get(self):
         self.render('static/projects.html')
@@ -136,4 +153,12 @@ class ProjectsHandler(tornado.web.RequestHandler):
 class ProjectHandler(tornado.web.RequestHandler):
     def get(self):
         addr = self.get_argument('addr')
+        db_conn = database.get_conn()
+        profile_json = db_conn.get(('profile_%s' % addr).encode('utf8'))
+        print(profile_json)
+        if profile_json:
+            profile = tornado.escape.json_decode(profile_json)
+            if 'role' in profile and profile['role'] == 'user':
+                self.redirect('/user?addr=%s' % addr)
+
         self.render('static/project.html')
