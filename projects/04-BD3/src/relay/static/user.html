@@ -35,7 +35,7 @@
   <br/>
   <div id='attest_params'>
   </div>
-  <!-- <span id="pm_event_hash_id"></span> -->
+  <span id="attest_statement"></span>
   <br/>
   <input type="button" value="Attest" id="attest_sig_btn"/>
   <br/>
@@ -74,6 +74,7 @@ const content_sig_btn = document.getElementById('content_sig_btn');
 
 const attest_schemas = document.getElementById('attest_schemas');
 const attest_params = document.getElementById('attest_params');
+const attest_statement = document.getElementById('attest_statement');
 const attest_to = document.getElementById('attest_to');
 
 const pm_to = document.getElementById('pm_to');
@@ -280,13 +281,13 @@ window.onload = async () => {
       for(var j in schemas['schemas'][i]){
         console.log(schemas['schemas'][i][j]);
         if(schemas['schemas'][i][j] == '$user'){
-          console.log('$ user');
+          //console.log('$ user');
           attest_params.innerHTML += `<input id='attest_params_${schemas['schemas'][i][j]}' value='${user_id}' disabled><br/>`;
         }else if(schemas['schemas'][i][j] == '$project'){
-          console.log('$ project');
+          //console.log('$ project');
           attest_params.innerHTML += attest_projects_html;
         }else if(schemas['schemas'][i][j] == '$role'){
-          console.log('$ role');
+          //console.log('$ role');
           attest_params.innerHTML += `<select id='attest_params_${schemas['schemas'][i][j]}'>
             <option value='founder'>Founder</option>
             <option value='ceo'>CEO</option>
@@ -295,10 +296,31 @@ window.onload = async () => {
             <option value='bd'>BD</option>
             <option value='marketing'>Marketing</option>
           </select><br/>`;
+
+          //const param = document.querySelector(`select[id='attest_params_${schemas['schemas'][i][j]}']`);
+          //console.log(param);
+          //param.onchange = () => {
+          //  console.log(param);
+          //}
         }
       }
     }
 
+    attest_params.addEventListener("change", () => {
+      var attest_statement_text = '';
+      console.log(schemas['schemas'][attest_schemas.value]);
+      for(var i in schemas['schemas'][attest_schemas.value]){
+        if(schemas['schemas'][attest_schemas.value][i][0] == '$'){
+          console.log(schemas['schemas'][attest_schemas.value][i]);
+          const param = document.querySelector(`[id='attest_params_${schemas['schemas'][attest_schemas.value][i]}']`);
+          console.log(param);
+          attest_statement_text += param.value + ' ';
+        }else{
+          attest_statement_text += schemas['schemas'][attest_schemas.value][i] + ' ';
+        }
+      }
+      attest_statement.innerText = attest_statement_text;
+    });
   }
 }
 
