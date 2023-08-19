@@ -1,6 +1,6 @@
 import { Box, Container, Flex, HStack, Tooltip, Button } from '@chakra-ui/react';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ColorModeButton, XNFTLogo, NavBar } from 'components/elements';
-import { ConnectButton } from '../ConnectButton';
 
 const Header = () => {
 
