@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BD3 Project</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/static/bulma/bulma-rtl.min.css">
+</head>
+
+<body>
+
+    <nav class="navbar" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+          <a class="navbar-item" href="https://web3bd.network">
+            <span style="font-size: 24px;">BD3</span>
+          </a>
+    
+          <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </a>
+        </div>
+    
+        <div id="navbarBasicExample" class="navbar-menu">
+          <div class="navbar-start">
+            <!-- <a class="navbar-item">
+              Home
+            </a>
+    
+            <div class="navbar-item has-dropdown is-hoverable">
+              <a class="navbar-link">
+                More
+              </a>
+    
+              <div class="navbar-dropdown">
+                <a class="navbar-item">
+                  About
+                </a>
+                <a class="navbar-item">
+                  Jobs
+                </a>
+                <a class="navbar-item">
+                  Contact
+                </a>
+                <hr class="navbar-divider">
+                <a class="navbar-item">
+                  Report an issue
+                </a>
+              </div>
+            </div> -->
+          </div>
+    
+          <div class="navbar-end">
+            <div class="navbar-item">
+              <div class="buttons">
+                <!-- <a class="button is-primary">
+                  <strong>Sign up</strong>
+                </a>
+                <a class="button is-light">
+                  Log in
+                </a> -->
+                <input type="button" value="Connect Metamask" id="connect_metamask_btn" />
+                <span id="ethereum_address"></span>
+            </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <section class="section">
+        <div class="container">
+          <h2 class="title">Project</h2>
+          <div id="messages"></div>
+
+          Attest To: <span id="attest_to"></span>
+          <br/>
+          <select id="attest_schemas">
+          </select>
+          <!-- <textarea id="pm"></textarea> -->
+          <br/>
+          <div id='attest_params'>
+          </div>
+          <span id="attest_statement"></span>
+          <br/>
+          <input type="button" value="Attest" id="attest_sig_btn"/>
+          <br/>
+          <br/>
+          <br/>
+          <br/>
+
+        </div>
+      </section>
+    
+
+  <!-- Reply to: <span id="reply_to"></span>
+  <br/>
+  <textarea id="content"></textarea>
+  <br/>
+  <span id="content_event_json"></span>
+  <br/>
+  <input type="button" value="Post" id="content_sig_btn"/>
+  <br/>
+  <br/>
+  <br/>
+  <br/> -->
+
+
+  <!-- PM To: <span id="pm_to"></span>
+  <br/>
+  <textarea id="pm"></textarea>
+  <br/>
+  <span id="pm_event_hash_id"></span>
+  <br/>
+  <input type="button" value="Send" id="pm_sig_btn"/>
+  <br/> -->
+
+</body>
+
+
+<script type="module">
+import { ethers } from "/static/ethers-5.6.esm.min.js";
+import { CHAIN_ID, CHAIN_NAME, RPC_URL, RELAY_URL} from "/static/config.js";
+
+let params = new URLSearchParams(window.location.search);
+for (let p of params.entries()) {
+  console.log(p);
+}
+const user_id = params.get('addr');
+
+
+const messages = document.getElementById('messages');
+const reply_to = document.getElementById('reply_to');
+const content = document.getElementById('content');
+const content_event_json = document.getElementById('content_event_json');
+const content_sig_btn = document.getElementById('content_sig_btn');
+
+const attest_schemas = document.getElementById('attest_schemas');
+const attest_params = document.getElementById('attest_params');
+const attest_statement = document.getElementById('attest_statement');
+const attest_to = document.getElementById('attest_to');
+const attest_sig_btn = document.getElementById('attest_sig_btn');
+var attest_statement_data = [];
+
+const pm_to = document.getElementById('pm_to');
+const pm = document.getElementById('pm');
+const pm_event_hash_id = document.getElementById('pm_event_hash_id');
+const pm_sig_btn = document.getElementById('pm_sig_btn');
+
+// pm_to.innerText = user_id;
+attest_to.innerText = user_id;
+
+window.onload = async () => {
+  if (typeof window.ethereum !== 'undefined') {
+    console.log('MetaMask is installed!');
+    if(window.ethereum.isConnected()){
+    }else{
+        const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+    }
+
+    console.log(ethereum.selectedAddress);
+    ethereum_address.innerText = ethereum.selectedAddress;
+
+    connect_metamask_btn.onclick = async (evt) => {
+      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+      const account = accounts[0];
+      console.log(account);
+      ethereum_address.innerText = account;
+
+      try {
+        await ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [{
+            chainId: CHAIN_ID,
+            rpcUrls: [RPC_URL],
+            chainName: CHAIN_NAME,
+            nativeCurrency: {
+              name: "PoW",
+              symbol: "POW",
+              decimals: 0
+            },
+            blockExplorerUrls: [RPC_URL+"/scan"]
+          }]
+        });
+      } catch (error) {
+
+      }
+
+      await ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x208' }],
+      });
+    }
+
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+
+    // Create WebSocket connection.
+    const socket = new WebSocket(RELAY_URL);
+
+    // Connection opened
+    socket.addEventListener("open", (event) => {
+      const subscription_id = Math.random()*100000000000000000;
+      socket.send(JSON.stringify(["REQ", subscription_id, {"authors": [user_id]}]));
+    });
+
+    // Listen for messages
+    socket.addEventListener("message", (event) => {
+      // console.log("Message from server ", event.data);
+      const e = JSON.parse(event.data);
+      if (e[0] != 'EVENT' || e[2]['kind'] != 1) {
+        return
+      }
+      const p = document.createElement('p');
+      p.innerHTML = `<div>${e[2]['content']}</div>
+          <a class='msg_event_id' href='/tweet?event=${e[2]['id']}'>${e[2]['id']}</a><br>
+          <button class='msg_like'>Like</button>
+          <button class='msg_unlike'>Unlike</button>
+          <button class='msg_dislike'>Dislike</button>
+          <button class='msg_undislike'>Undislike</button>
+          <button class='msg_retweet'>Retweet</button>
+          <button class='msg_reply'>Reply</button>
+          <div>from <a class='user_addr' href='/user?addr=${e[2]['pubkey']}'>${e[2]['pubkey']}</a><br>
+            <button class='user_follow'>Follow</button>
+            <button class='user_unfollow'>Unfollow</button>
+            <button class='user_pm'>PM</button>
+          </div>`;
+      messages.prepend(p);
+    });
+
+    // let event = null;
+    // let event_hash_id = '';
+    // let event_sig = '';
+    // content.addEventListener('keyup', async (evt) => {
+    //   const timestamp = parseInt(Date.now()/1000);
+    //   const content = evt.target.value;
+    //   const content_array = content.split(' ');
+    //   let tags = [];
+    //   for(const word of content_array){
+    //     if(word.startsWith('#')){
+    //       console.log(word);
+    //       tags.push(['t', word.slice(1)]);
+    //     }
+    //   }
+
+    //   const json = JSON.stringify([0, ethereum.selectedAddress, timestamp, 1, tags, content]);
+    //   event_hash_id = ethers.utils.sha256(new TextEncoder().encode(json));
+    //   content_event_json.innerText = json;
+
+    //   event = {
+    //     "id": event_hash_id,
+    //     "pubkey": ethereum.selectedAddress,
+    //     "created_at": timestamp,
+    //     "kind": 1,
+    //     "tags": tags,
+    //     "content": content,
+    //   }
+    // });
+
+    // content_sig_btn.onclick = async (evt) => {
+    //   if (event && event_hash_id) {
+    //     // console.log(ethers.utils.hexlify(new TextEncoder().encode(content.value)));
+    //     const timestamp = event['created_at'];
+    //     const tags = event['tags'];
+    //     const content = event['content'];
+    //     const json = JSON.stringify([0, ethereum.selectedAddress, timestamp, 1, tags, content]);
+    //     // console.log(json);
+    //     const sig = await ethereum.request({
+    //       method: "personal_sign",
+    //       params: [ethers.utils.hexlify(new TextEncoder().encode(json)), ethereum.selectedAddress]
+    //     });
+    //     event['sig'] = sig;
+    //     console.log(event);
+    //     socket.send(JSON.stringify(['EVENT', event]));
+    //   }else{
+    //     content_event_json.innerText = 'empty!'
+    //   }
+    // }
+
+
+    messages.addEventListener('click', async (evt) => {
+      if (evt.target.className == 'user_follow'){
+        const user_addr = evt.target.parentNode.querySelector('.user_addr');
+        console.log(user_addr.innerText);
+
+        const timestamp = parseInt(Date.now()/1000);
+        const tags = [['follow', user_addr.innerText, '', '']];
+        const json = JSON.stringify([0, ethereum.selectedAddress, timestamp, 3, tags, '']);
+        console.log(json);
+        const event_hash = ethers.utils.sha256(new TextEncoder().encode(json));
+
+        const follow_event = {
+          "id": event_hash_id,
+          "pubkey": ethereum.selectedAddress,
+          "created_at": timestamp,
+          "kind": 3,
+          "tags": tags,
+          "content": '',
+        }
+
+        // console.log(ethers.utils.hexlify(new TextEncoder().encode(content.value)));
+        const sig = await ethereum.request({
+          method: "personal_sign",
+          params: [event_hash, ethereum.selectedAddress]
+        });
+        follow_event['sig'] = sig;
+        console.log(follow_event);
+        socket.send(JSON.stringify(['EVENT', follow_event]));
+
+    //   } else if (evt.target.className == 'user_pm'){
+    //     const user_addr = evt.target.parentNode.querySelector('.user_addr');
+    //     console.log(user_addr.innerText);
+    //     pm_to.innerText = user_addr.innerText;
+
+    //   } else if (evt.target.className == 'msg_reply'){
+    //     const msg_event_id = evt.target.parentNode.querySelector('.msg_event_id');
+    //     console.log(msg_event_id.innerText);
+    //     reply_to.innerText = msg_event_id.innerText;
+
+      }
+
+
+    });
+
+    const projects_response = await fetch('/api/projects');
+    const projects_data = await projects_response.json();
+    var attest_projects_html = '<select id="attest_params_$project">';
+    for(var i in projects_data){
+      console.log(projects_data[i]);
+      attest_projects_html += `<option value='${i}'>${projects_data[i]['name']}</option>`;
+    }
+    attest_projects_html += '</select>';
+
+    const response = await fetch('/api/attest_schemas');
+    const schemas = await response.json();
+    attest_schemas.innerHTML = '';
+    for(var i in schemas['schemas']){
+      console.log(schemas['schemas'][i]);
+      attest_schemas.innerHTML += `<option value='${i}'>${schemas['schemas'][i].toString()}</option>`;
+    }
+
+    attest_schemas.onclick = (evt) => {
+      console.log(evt.target.value);
+      const i = parseInt(evt.target.value);
+      attest_params.innerHTML = '';
+      for(var j in schemas['schemas'][i]){
+        console.log(schemas['schemas'][i][j]);
+        if(schemas['schemas'][i][j] == '$user'){
+          attest_params.innerHTML += `<input id='attest_params_${schemas['schemas'][i][j]}' value='${user_id}' disabled><br/>`;
+
+        }else if(schemas['schemas'][i][j] == '$project'){
+          attest_params.innerHTML += attest_projects_html;
+
+        }else if(schemas['schemas'][i][j] == '$role'){
+          attest_params.innerHTML += `<select id='attest_params_${schemas['schemas'][i][j]}'>
+            <option value='Founder'>Founder</option>
+            <option value='CEO'>CEO</option>
+            <option value='COO'>COO</option>
+            <option value='CTO'>CTO</option>
+            <option value='BD'>BD</option>
+            <option value='Marketing'>Marketing</option>
+          </select><br/>`;
+
+        }else if(schemas['schemas'][i][j] == '$skill'){
+          attest_params.innerHTML += `<select id='attest_params_${schemas['schemas'][i][j]}'>
+            <option value='python'>Python</option>
+            <option value='javascript'>JavaScript</option>
+            <option value='nodejs'>NodeJS</option>
+            <option value='java'>Java</option>
+          </select><br/>`;
+        }
+      }
+    }
+
+    attest_params.addEventListener("click", () => {
+      var attest_statement_text = '';
+      attest_statement_data = [];
+      console.log(schemas['schemas'][attest_schemas.value]);
+      for(var i in schemas['schemas'][attest_schemas.value]){
+        if(schemas['schemas'][attest_schemas.value][i][0] == '$'){
+          console.log(schemas['schemas'][attest_schemas.value][i]);
+          const param = document.querySelector(`[id='attest_params_${schemas['schemas'][attest_schemas.value][i]}']`);
+          console.log(param);
+          attest_statement_text += param.value + ' ';
+          attest_statement_data.push(param.value);
+        }else{
+          attest_statement_text += schemas['schemas'][attest_schemas.value][i] + ' ';
+          attest_statement_data.push(schemas['schemas'][attest_schemas.value][i]);
+        }
+      }
+      attest_statement.innerText = attest_statement_text;
+    });
+
+    attest_sig_btn.onclick = async (evt) => {
+      const timestamp = parseInt(Date.now()/1000);
+      const tags = [['attest', parseInt(attest_schemas.value), attest_statement_data]];
+      const json = JSON.stringify([0, ethereum.selectedAddress, timestamp, 3, tags, '']);
+      console.log(json);
+      const event_hash = ethers.utils.sha256(new TextEncoder().encode(json));
+
+      const attest_event = {
+        "id": event_hash,
+        "pubkey": ethereum.selectedAddress,
+        "created_at": timestamp,
+        "kind": 3,
+        "tags": tags,
+        "content": '',
+      }
+
+      const sig = await ethereum.request({
+        method: "personal_sign",
+        params: [ethers.utils.hexlify(new TextEncoder().encode(json)), ethereum.selectedAddress]
+      });
+      attest_event['sig'] = sig;
+      console.log(attest_event);
+      socket.send(JSON.stringify(['EVENT', attest_event]));
+
+    };
+  }
+}
+
+
+</script>
+</html>

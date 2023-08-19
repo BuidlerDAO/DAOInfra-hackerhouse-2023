@@ -299,6 +299,7 @@ class Application(tornado.web.Application):
                 # (r"/dashboard", bd3.DashboardHandler),
                 # (r"/api/dashboard", bd3.DashboardAPIHandler),
 
+                (r"/project", bd3.ProjectHandler),
                 (r"/projects", bd3.ProjectsHandler),
                 (r"/api/projects", bd3.ProjectsAPIHandler),
                 (r"/api/attest_user", bd3.AttestUserAPIHandler),

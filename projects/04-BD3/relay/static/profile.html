@@ -194,15 +194,16 @@ window.onload = async () => {
       const name = profile_name.value;
       const about = profile_about.value;
       const role = document.querySelector('input[name="profile_role"]:checked');
+      var role_value = 'user';
       if(role){
-        console.log(role.value);
+        role_value = role.value;
       }
       const picture = profile_pic_url.value;
 
       const timestamp = parseInt(Date.now()/1000);
       const content = {
           name: name,
-          role: role,
+          role: role_value,
           about: about,
           picture: picture
         }

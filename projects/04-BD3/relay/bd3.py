@@ -132,3 +132,8 @@ class AttestEventAPIHandler(tornado.web.RequestHandler):
 class ProjectsHandler(tornado.web.RequestHandler):
     def get(self):
         self.render('static/projects.html')
+
+class ProjectHandler(tornado.web.RequestHandler):
+    def get(self):
+        addr = self.get_argument('addr')
+        self.render('static/project.html')
