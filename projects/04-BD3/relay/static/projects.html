@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BD3 Projects</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/static/bulma/bulma-rtl.min.css">
+<style>
+.project{
+    height: 300px;
+    width: 230px;
+    border-radius: 5px;
+    border: 1px black solid;
+    padding: 10px;
+    margin: 10px;
+    float: left;
+}
+</style>
+</head>
+
+<body>
+  <nav class="navbar" role="navigation" aria-label="main navigation">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://web3bd.network">
+        <span style="font-size: 24px;">BD3</span>
+      </a>
+
+      <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </a>
+    </div>
+
+    <div id="navbarBasicExample" class="navbar-menu">
+      <div class="navbar-start">
+        <!-- <a class="navbar-item">
+          Home
+        </a>
+
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link">
+            More
+          </a>
+
+          <div class="navbar-dropdown">
+            <a class="navbar-item">
+              About
+            </a>
+            <a class="navbar-item">
+              Jobs
+            </a>
+            <a class="navbar-item">
+              Contact
+            </a>
+            <hr class="navbar-divider">
+            <a class="navbar-item">
+              Report an issue
+            </a>
+          </div>
+        </div> -->
+      </div>
+
+      <div class="navbar-end">
+        <div class="navbar-item">
+          <div class="buttons block">
+            <!-- <a class="button is-primary">
+              <strong>Sign up</strong>
+            </a>
+            -->
+            <a class="button is-normal">Post Needs</a>
+            <input class="button is-normal" type="button" value="Connect Metamask" id="connect_metamask_btn" />
+            <span class="box" id="ethereum_address"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+
+  <section class="section">
+    <div class="container">
+      <h2 class="title">Projects</h2>
+      <div id="projects">
+      </div>
+    </div>
+  </section>
+
+</body>
+
+
+<script type="module">
+import { ethers } from "/static/ethers-5.6.esm.min.js";
+import { CHAIN_ID, CHAIN_NAME, RPC_URL, RELAY_URL} from "/static/config.js";
+
+// let params = new URLSearchParams(window.location.search);
+// for (let p of params.entries()) {
+//   console.log(p);
+// }
+// const user_id = params.get('addr');
+
+
+const projects = document.getElementById('projects');
+window.onload = async () => {
+  if (typeof window.ethereum !== 'undefined') {
+    console.log('MetaMask is installed!');
+    if(window.ethereum.isConnected()){
+    }else{
+        const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+    }
+
+    console.log(ethereum.selectedAddress);
+    ethereum_address.innerText = ethereum.selectedAddress;
+
+    connect_metamask_btn.onclick = async (evt) => {
+      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+      const account = accounts[0];
+      console.log(account);
+      ethereum_address.innerText = account;
+
+      // try {
+      //   await ethereum.request({
+      //     method: "wallet_addEthereumChain",
+      //     params: [{
+      //       chainId: CHAIN_ID,
+      //       rpcUrls: [RPC_URL],
+      //       chainName: CHAIN_NAME,
+      //       nativeCurrency: {
+      //         name: "PoW",
+      //         symbol: "POW",
+      //         decimals: 0
+      //       },
+      //       blockExplorerUrls: [RPC_URL+"/scan"]
+      //     }]
+      //   });
+      // } catch (error) {
+      // }
+
+      await ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: CHAIN_ID }],
+      });
+    }
+
+    const response = await fetch(`/api/projects`);
+    const data = await response.json();
+    console.log(data);
+    for(var i in data){
+        projects.innerHTML += `<div class='project'>
+            <a href='/project?addr=${i}'>${data[i]['name']}</a>
+        </div>`;
+    }
+
+  }
+}
+
+
+</script>
+</html>

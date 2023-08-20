@@ -1,0 +1,22 @@
+.partnerContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 15px;
+  padding: 20px 20px;
+}
+
+.partnerItemContainer {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  .partnerItem {
+    width: 190px;
+    height: 40px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px 16px;
+    box-sizing: content-box;
+  }
+}
