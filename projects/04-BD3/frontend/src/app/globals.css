@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+@font-face {
+    font-family: 'Baloo Extra Bolder';
+  src: url('../assets/font/Baloo2-ExtraBold.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.MuiChip-root {
+  border-radius: 2px;
+  font-size: 12px;
+}
+
+.MuiFormLabel-root {
+  display: none !important;
+}
+
+.MuiOutlinedInput-notchedOutline {
+  display: none !important;
+}
+
+.css-2m9kme-MuiFormControl-root {
+  width: auto;
+}
+
+.MuiSelect-select {
+  font-weight: 900;
+  font-size: 30px;
+  display: flex;
+  height: 35px;
+  line-height: 39px;
+}

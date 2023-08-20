@@ -1,0 +1,14 @@
+.cardListContainer {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 3 列，每列等宽 */
+  gap: 20px;
+  .CardContentContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+.MediaCardItem {
+  flex-shrink: 0;
+}
