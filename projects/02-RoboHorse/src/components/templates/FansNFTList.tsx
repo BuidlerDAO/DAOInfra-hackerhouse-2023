@@ -21,9 +21,9 @@ import {
     NumberDecrementStepper,
   } from '@chakra-ui/react';
   import React, { FC, useEffect, useState } from 'react';
-  import FansNFT from 'abi/fansNFT.json';
-  import MarketFactory from 'abi/marketFactory.json';
-  import ERC3525Market from 'abi/erc3525Market.json';
+  import FansNFTAbi from 'abi/fansNFT.json';
+  import MarketFactoryAbi from 'abi/marketFactory.json';
+  import ERC3525MarketAbi from 'abi/erc3525Market.json';
   import { useWeb3React } from "@web3-react/core";
   import { useRouter } from 'next/router';
   import { utils } from 'ethers';
@@ -31,24 +31,33 @@ import {
   import { FansNFTCard } from 'components/modules';
   import { getImageInfo } from 'utils/resolveIPFS'; 
   import { marketFactoryAddr, FullZeroAddr } from 'utils/config';
+  import { useAccount, useConnect, useNetwork, useContractRead, useContractReads } from 'wagmi'
+  import { readContract } from '@wagmi/core'
+  import { prepareWriteContract, writeContract, waitForTransaction } from '@wagmi/core'
 
   // https://fansnft.com/fansnftcontractlist/0xaa..bbb/kol721nftlist
   const FansNFTList: FC = () => {
-    const { account, library: web3, chainId } = useWeb3React();
-    console.log('web3', web3)
+    const { address: account } = useAccount();
+    const { chain } = useNetwork();
+
+    
     const router = useRouter();
     const toast = useToast();
     const { isOpen, onOpen, onClose } = useDisclosure();
+    const { fansnftaddress: fansNftAddr, slotId, symbol } = router.query;
 
     const [fansNFT, setFansNFT] = useState<any>(null);
-    const [market, setMarket] = useState<any>(null);
-    const [marketFactory, setMarketFactory] = useState<any>(null);
+    const [marketAddress, setMarketAddress] = useState<string>('');
+    const [marketFactoryAddress, setMarketFactoryAddress] = useState<string>('');
     const [nft721, setNft721] = useState<any>(null);
     const [fansNFTList, setFansNFTList] =useState<any[]>([]);
     const [tokenId, setTokenId] =useState<number>(0);
-    const [twitterId, setTwitterId] =useState<string>('');
-    const [days, setDays] =useState<number>(30);
-    const [maxFansNumber, setMaxFansNumber] =useState<number>(1000);
+    const [twitterId, setTwitterId] = useState<string>('');
+    const [days, setDays] = useState<number>(30);
+    const [maxFansNumber, setMaxFansNumber] = useState<number>(1000);
+    const [firstTokenId, setFirstTokenId] = useState<number>(0);
+    const [imageInfo, setImageInfo] = useState<string>('');
+    const [nftInfoReadList, setNftInfoReadList] = useState<any[]>([]);
 
     const [isIssuing, setIsIssuing] = useState<boolean>(false);
     const [isApproving, setIsApproving] = useState<boolean>(false);
@@ -60,54 +69,92 @@ import {
     const initialRef = React.useRef(null)
 
     useEffect(() => {
-        const { fansnftaddress, slotId } = router.query;
-        if (web3 != null && utils.isAddress(fansnftaddress as string)) {
-            setFansNFT(new web3.eth.Contract(FansNFT, fansnftaddress));
-            const marketFactory = new web3.eth.Contract(MarketFactory, marketFactoryAddr[chainId as number]);
-            setMarketFactory(marketFactory);
-            marketFactory.methods["erc3525MarketBuiltMap"](fansnftaddress, slotId).call({from: account}).then((marketAddr: string) => {              
-              if (marketAddr.localeCompare(FullZeroAddr, 'en', { sensitivity: 'base' }) !== 0) {
-                setMarket(new web3.eth.Contract(ERC3525Market, marketAddr));
-              }
-            })
+      if (chain != null) {
+        setMarketFactoryAddress(marketFactoryAddr[chain.id as number]);
+      }
+    }, [chain])
+
+    useContractRead({
+      address: marketFactoryAddress,
+      abi: MarketFactoryAbi,
+      functionName: 'erc3525MarketBuiltMap',
+      enabled: marketFactoryAddress != "",
+      args: [fansNftAddr, slotId],
+      onSuccess(marketAddr: string) {
+        console.log('erc3525MarketBuiltMap result', marketAddr);
+        if (marketAddr.localeCompare(FullZeroAddr, 'en', { sensitivity: 'base' }) !== 0) {
+          setMarketAddress(marketAddr)
         }
-    }, [web3]);
+      },
+      onError(error) {
+        console.log('Error', error)
+      },
+    })
 
-    useEffect(() => {
-        if (fansNFT != null) {
-            getFansNFTList();
-        }
-    }, [fansNFT, refresh]);
-
-    const getFansNFTList = () => {   
-      const { slotId, symbol } = router.query;  
-      const nftList: any[] = []; 
-      fansNFT.methods['allTokensInSlot'](slotId).call({from: account}).then((tokenArr: number[]) => {
-         console.log(tokenArr);
-          fansNFT.methods['tokenURI'](tokenArr[0]).call({from: account}).then((tokenURI: string) => {
-            getImageInfo(tokenURI).then((imageInfo: string) => {
-              tokenArr.forEach((tokenId: number) => {
-                const nftInfo = {tokenId, slotId, image: imageInfo, value: 0, owner: "", symbol}
-                nftInfo.tokenId = tokenId;
-                fansNFT.methods["balanceOf"](tokenId).call({from: account}).then((tokenValue: number) => {
-                  nftInfo.value = tokenValue;
-                  fansNFT.methods["ownerOf"](tokenId).call({from: account}).then((ownerAddr: string) => {
-                    nftInfo.owner = ownerAddr;
-                    nftList.push(nftInfo);
-                    console.log(nftInfo.tokenId, nftInfo);
-                    if (nftList.length - tokenArr.length === 0) {   
-                      nftList.sort((a: any, b: any) => b.tokenId - a.tokenId)                   
-                      setFansNFTList(nftList);
-                    }
-                  })
-                })
-              })
+    useContractRead({
+      address: fansNftAddr,
+      abi: FansNFTAbi,
+      functionName: 'allTokensInSlot',
+      enabled: fansNftAddr != "",
+      args: [slotId],
+      onSuccess(tokenArr: number[]) {
+        console.log('allTokensInSlot result', tokenArr[0]);
+        const nftReadInfoList = []
+        const nftInfoList = []
+        readContract({
+          address: fansNftAddr,
+          abi: FansNFTAbi,
+          functionName: 'tokenURI',
+          args: [Number(tokenArr[0])]
+        }).then((tokenURI: string) => {
+          console.log('getImageInfo 1', tokenURI)
+          getImageInfo(tokenURI).then((imageInfo: string) => {
+            console.log('getImageInfo 2', imageInfo)
+            const nftInfo = {slotId, image: imageInfo, value: 0, owner: "", symbol}
+            tokenArr.map((tokenId: BigInt) => {
+              const nftReadInfo = {address: fansNftAddr, abi: FansNFTAbi};
+              nftReadInfoList.push(...[
+                {
+                  ...nftReadInfo,
+                  functionName: 'balanceOf',
+                  args: [Number(tokenId)]
+                },
+                {
+                  ...nftReadInfo,
+                  functionName: 'ownerOf',
+                  args: [Number(tokenId)]
+                }
+              ])
+              nftInfo.tokenId = tokenId;
+              nftInfoList.push(nftInfo)
             })
-          });
-      });
-    }
+            setNftInfoReadList(nftReadInfoList)
+            setFansNFTList(nftInfoList)
+          })
+        })
+      },
+      onError(error) {
+        console.log('Error', error)
+      },
+    }) 
+    
+    useContractReads({
+      contracts: nftInfoReadList,
+      enabled: nftInfoReadList.length > 0,
+      onSuccess(results: any[]) {
+        console.log('nftInfoReadList results', results)
+        for (let i = 0; i < results.length; i += 2) {
+          const oneNFTInfo = results.slice(i, i + 2);      
+          fansNFTList[i / 2].value = Number(oneNFTInfo[0].result);
+          fansNFTList[i / 2].owner = oneNFTInfo[1].result;
+        }
+      },
+      onError(error) {
+        console.log('Error', error)
+      },
+    })
 
-    const issue = () => {
+    const issue = async () => {
       if (!isApproved) {
         toast({
           title: 'Warning',
@@ -119,46 +166,29 @@ import {
         return;
       }
       const endTime = days * 3600 * 24 + Date.parse(new Date().toString()) / 1000;
-      const contractFunc = fansNFT.methods['deposit721NFT']; 
-      const data = contractFunc(tokenId, endTime, maxFansNumber, twitterId).encodeABI();
-      console.log(data);
-      const tx = {
-          from: account,
-          to: fansNFT._address,
-          data,
-          value: 0,
-          gasLimit: 0
-      }
-      contractFunc(tokenId, endTime, maxFansNumber, twitterId).estimateGas({from: account}).then((gasLimit: any) => {
-        tx.gasLimit = gasLimit;
-        web3.eth.sendTransaction(tx)
-            .on('transactionHash', () => {
-              setIsIssuing(true);
-            })
-            .on('receipt', () => {
-              setIsIssuing(false);
-              getFansNFTList();
-              onClose();
-            })
-            .on('error', () => {
-              setIsIssuing(false);
-              toast({
-                title: 'Failed',
-                description: "Issue NFT failed",
-                status: 'error',
-                position: 'bottom-right',
-                isClosable: true,
-              });
-            });
-      }).catch((err: any) => {
+      try {
+        const { hash } = await writeContract({
+          address: fansNFTAddress,
+          abi: FansNFTAbi,
+          functionName: 'deposit721NFT',
+          args: [tokenId, endTime, maxFansNumber, twitterId],
+        })
+        setIsIssuing(true);
+        const data = await waitForTransaction({ hash })
+        setIsIssuing(false);
+        getFansNFTList();
+        onClose();
+        setLeftDays(parseInt(((newEndTime - Date.parse(new Date().toString()) / 1000) / (3600 * 24)).toString()));
+      } catch (error) {
+        setIsIssuing(false);
         toast({
           title: 'Failed',
-          description: "Issue NFT failed: " + fansNFT._address + err,
+          description: "Issue NFT failed: " + error.toString(),
           status: 'error',
           position: 'bottom-right',
           isClosable: true,
         });
-      });
+      }
     }
 
     const approve = () => {
@@ -194,41 +224,51 @@ import {
       });
     }
 
-    const checkYourNFT = () => {
-      if (tokenId > 0) {
-        let contractFunc = nft721.methods['ownerOf'];
-        contractFunc(tokenId).call({from: account}).then((ownerAddress: string) => {
-          console.log(ownerAddress);
-          setIsOwner(ownerAddress.localeCompare(account as string, 'en', { sensitivity: 'base' }) === 0);
-          setIsTokenIdInvalid(false);
-          contractFunc = nft721.methods['getApproved'];
-          contractFunc(tokenId).call({from: account}).then((address: string) => {
-            console.log(address);
-            setIsApproved(address.localeCompare(fansNFT._address, 'en', { sensitivity: 'base' }) === 0);
-          }).catch((e: any) => {
-            setIsApproved(false);
-            setIsTokenIdInvalid(true);
-          })
-        }).catch((e: any) => {
-          setIsOwner(false);
-          setIsTokenIdInvalid(true);
-        })        
-      }
-    }
+    // const checkYourNFT = () => {
+    //   if (tokenId > 0) {
+    //     setIsTokenIdInvalid(false);
 
-    useEffect(() => {
-      if (nft721 != null) {
-        checkYourNFT();
-      }
-    }, [tokenId]);
+    //     readContract({
+    //       address: nftAddress,
+    //       abi: Erc721Abi,
+    //       functionName: 'ownerOf',
+    //       args: [tokenId]
+    //     }).then((ownerAddress: string) => {
+    //       setIsOwner(ownerAddress.localeCompare(account as string, 'en', { sensitivity: 'base' }) === 0);
+    //     }).catch((e: any) => {
+    //       setIsOwner(false);
+    //       setIsTokenIdInvalid(true);
+    //     }) 
+
+    //     readContract({
+    //       address: nftAddress,
+    //       abi: Erc721Abi,
+    //       functionName: 'getApproved',
+    //       args: [tokenId]
+    //     }).then((address: string) => {
+    //       setIsApproved(address.localeCompare(fansNftAddr, 'en', { sensitivity: 'base' }) === 0);
+    //     }).catch((e: any) => {
+    //       setIsApproved(false);
+    //       setIsTokenIdInvalid(true);
+    //     })      
+    //   }
+    // }
+
+    // useEffect(() => {
+    //   if (nftAddress != null) {
+    //     checkYourNFT();
+    //   }
+    // }, [tokenId]);
 
     return (
         <>
           {fansNFTList?.length ? (
             <SimpleGrid  columns={3} spacing={10}>
-            {fansNFTList.map((fansNFTObj, key) => (
-                <FansNFTCard {...fansNFTObj} fansNFT={fansNFT} market={market} marketFactory={marketFactory} refresh={() => setRefresh(!refresh)}/>
-            ))}
+            {fansNFTList.map((fansNFTObj, key) => {
+                console.log('fansNFTObj', fansNFTObj)
+                return <FansNFTCard {...fansNFTObj} fansNFTAddr={fansNftAddr} marketAddr={marketAddress} 
+                             marketFactoryAddr={marketFactoryAddress} refresh={() => setRefresh(!refresh)}/>
+            })}
             </SimpleGrid>
         ) : (
             <Box>Oooooops...there is no KOL to issue their FansNFTs, if you issue, you will be the first KOL, LFG!</Box>

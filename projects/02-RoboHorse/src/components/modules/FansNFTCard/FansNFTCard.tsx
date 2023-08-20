@@ -32,12 +32,15 @@ import { useWeb3React } from "@web3-react/core";
 import { useRouter } from 'next/router';
 import BigNumber from 'bignumber.js';
 import ERC3525Market from 'abi/erc3525Market.json';
+import FansNFTAbi from 'abi/fansNFT.json';
+import { useAccount, useConnect, useNetwork, useContractRead, useContractReads } from 'wagmi'
+import { readContracts, readContract } from '@wagmi/core'
 
 
 type FansNFTInfo = {
-  marketFactory: any;
-  market: any;
-  fansNFT: any;
+  marketFactoryAddr: string;
+  marketAddr: string;
+  fansNFTAddr: string;
   tokenId: number;
   slotId: number;
   owner: string;
@@ -48,19 +51,22 @@ type FansNFTInfo = {
   refresh: () => void;
 }
 
-const FansNFTCard: FC<FansNFTInfo> = ({ marketFactory, market, fansNFT, symbol, tokenId, slotId, owner, image, value, setMergeInfo, refresh }) => {
+const FansNFTCard: FC<FansNFTInfo> = ({ marketFactoryAddr, marketAddr, fansNFTAddr, symbol, tokenId, slotId, owner, image, value, setMergeInfo, refresh }) => {
   const bgColor = useColorModeValue('none', 'gray.700');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const descBgColor = useColorModeValue('gray.100', 'gray.600');
 
+  console.log('image', image)
   const router = useRouter()
-  const { account, library: web3 } = useWeb3React();
+  const { address: account } = useAccount();
+  const { chain } = useNetwork();
+
   const modal1 = useDisclosure();
   const modal2 = useDisclosure();
   const modal3 = useDisclosure();
   const modal4 = useDisclosure();
 
-  const [erc3525Market, setERC3525Market] = useState<any>(market);
+  const [erc3525Market, setERC3525Market] = useState<any>(marketAddr);
   const [approved, setApproved] = useState<boolean>(false);
   const [isApproving, setIsApproving] = useState<boolean>(false);
   const [isBuilding, setIsBuilding] = useState<boolean>(false);
@@ -81,8 +87,15 @@ const FansNFTCard: FC<FansNFTInfo> = ({ marketFactory, market, fansNFT, symbol, 
   let toAddr = '';
 
   useEffect(() => {
-    if (erc3525Market!= null) {
-      checkApprove();
+    if (marketAddr != null) {
+      readContract({
+        address: fansNFTAddr,
+        abi: FansNFTAbi,
+        functionName: 'allowance',
+        args: [tokenId, marketAddr]
+      }).then((allowancedAmount: number) => {
+        setApproved(allowancedAmount >= orderValue);
+      })
     }
   }, [orderValue]);
   
@@ -153,16 +166,13 @@ const FansNFTCard: FC<FansNFTInfo> = ({ marketFactory, market, fansNFT, symbol, 
     });
   }
 
-  const checkApprove = () => {
-    const contractFunc = fansNFT.methods['allowance(uint256,address)'];
-    contractFunc(tokenId, erc3525Market._address).call({from: account}).then((allowancedAmount: number) => {
-      setApproved(allowancedAmount >= orderValue);
-    })
-  }
-
   const checkApproveAndAddOrder = () => {
-    const contractFunc = fansNFT.methods['allowance(uint256,address)'];
-    contractFunc(tokenId, erc3525Market._address).call({from: account}).then((allowancedAmount: number) => {
+    readContract({
+      address: fansNFTAddr,
+      abi: FansNFTAbi,
+      functionName: 'allowance',
+      args: [tokenId, marketAddr]
+    }).then((allowancedAmount: number) => {
       if (allowancedAmount >= orderValue) {
         addOrder();
       } else {

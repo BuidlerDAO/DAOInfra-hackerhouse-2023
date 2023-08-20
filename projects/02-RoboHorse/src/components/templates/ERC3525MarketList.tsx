@@ -27,70 +27,81 @@ import {
     Image
   } from '@chakra-ui/react';
   import React, { FC, useEffect, useState } from 'react';
-  import MarketFactory from 'abi/marketFactory.json';
-  import MarketHelper from 'abi/marketHelper.json';
+  import MarketFactoryAbi from 'abi/marketFactory.json';
+  import MarketHelperAbi from 'abi/marketHelper.json';
   import { useWeb3React } from "@web3-react/core";
   import { marketFactoryAddr, marketHelperAddr } from 'utils/config';
   import { useRouter } from 'next/router';
   import { getImageInfo } from 'utils/resolveIPFS';
   import BigNumber from 'bignumber.js';
-  
+  import { useAccount, useConnect, useNetwork, useContractRead } from 'wagmi'
   
   const ERC3525MarketList: FC = () => {
-    const { account, library: web3, chainId } = useWeb3React();
-  
+    const { address: account } = useAccount();
+    const { chain } = useNetwork();
+
     const hoverTrColor = useColorModeValue('gray.100', 'gray.700');
     const { isOpen, onOpen, onClose } = useDisclosure()
   
-
     const [marketList, setMarketList] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [marketFactory, setMarketFactory] =useState<any>(null);
     const [marketHelper, setMarketHelper] =useState<any>(null);
     const [nftAddr, setNFTAddr] = useState<string>('');
-  
+    const [client, setClient] = useState<any>(null);
+    const [marketFactoryAddress, setMarketFactoryAddress] = useState<string>("")
+    const [marketHelperAddress, setMarketHelperAddress] = useState<string>("")
+    const [marketLength, setMarketLength] = useState<number>(0)
     const router = useRouter();
   
     const initialRef = React.useRef(null)
     const finalRef = React.useRef(null)
     const filteredAddr: Record<string, boolean> = {}
-  
+
+
     useEffect(() => {
-      if (web3 != null) {
-        setMarketFactory(new web3.eth.Contract(MarketFactory, marketFactoryAddr[chainId as number]));
-        setMarketHelper(new web3.eth.Contract(MarketHelper, marketHelperAddr[chainId as number]));
+      if (chain != null) {        
+        setMarketFactoryAddress(marketFactoryAddr[chain.id as number])
+        setMarketHelperAddress(marketHelperAddr[chain.id as number])
       }
-    }, [web3])
-  
-    useEffect(() => {
-      if (marketFactory != null) {
-        getMarketList();
-      }
-    }, [marketFactory])
-  
-    const getMarketList = () => {
-      let totalLength = 0;
-      let contractFunc = marketFactory.methods['getMarketLength'];        
-      contractFunc().call({from: account}).then((length: number) => {
-        console.log(length);
-        totalLength = length;
-        marketHelper.methods['getMarketList'](marketFactory._address, 0, totalLength).call({from: account}).then((marketInfos: any[]) => {
-          console.log(marketInfos);
-          const markets: any[] = [];
-          marketInfos.forEach((marketInfo: any) => {
+    }, [chain])
+
+    useContractRead({
+      address: marketFactoryAddress,
+      abi: MarketFactoryAbi,
+      functionName: 'getMarketLength',
+      watch: true,
+      enabled: marketFactoryAddress != "" && marketHelperAddress != "",
+      onSuccess(length: number) {
+        console.log('getMarketLength', length);
+        setMarketLength(length)
+      },
+      onError(error) {
+        console.log('Error', error)
+      },
+    })
+
+    useContractRead({
+      address: marketHelperAddress,
+      abi: MarketHelperAbi,
+      functionName: 'getMarketList',
+      args: [marketFactoryAddress, 0, marketLength],
+      enabled: marketLength > 0,
+      onSuccess(marketInfos: any[]) {
+        console.log('getMarketList', marketInfos);
+        const markets: any[] = [];
+        marketInfos.forEach((marketInfo: any) => {
             getImageInfo(marketInfo.nftTokenURI).then((image: string) => {
-             
-              markets.push({...marketInfo, image});
-              if (markets.length - marketInfos.length === 0) {
-                markets.sort((a: any, b: any) => b.totalVolumn - a.totalVolumn) 
-                setMarketList(markets);
-              }
-            })
-          })
           
+            markets.push({...marketInfo, image});
+            if (markets.length - marketInfos.length === 0) {
+              markets.sort((a: any, b: any) => Number(b.totalVolumn - a.totalVolumn)) 
+              setMarketList(markets);
+            }
+          })
         })
-      });
-    }
+      },
+    })
   
     return (
       <>

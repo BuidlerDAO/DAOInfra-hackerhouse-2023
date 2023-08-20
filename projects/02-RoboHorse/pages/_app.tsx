@@ -8,8 +8,6 @@ import "./style.css";
 import '@rainbow-me/rainbowkit/styles.css';
 import { WagmiProvider } from 'providers/WagmiProvider';
 
-require('dotenv').config();
-
 
 const config = {
   initialColorMode: 'dark',

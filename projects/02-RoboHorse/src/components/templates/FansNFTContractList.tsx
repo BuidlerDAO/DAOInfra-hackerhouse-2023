@@ -29,26 +29,32 @@ import {
 } from '@chakra-ui/react';
 import React, { FC, useEffect, useState } from 'react';
 import { getEllipsisTxt } from 'utils/format';
-import FansNFTFactory from 'abi/fansNFTFactory.json';
-import FansNFT from 'abi/fansNFT.json';
-import Erc721 from 'abi/erc721.json';
+import FansNFTFactoryAbi from 'abi/fansNFTFactory.json';
+import FansNFTAbi from 'abi/fansNFT.json';
+import Erc721Abi from 'abi/erc721.json';
 import { useWeb3React } from "@web3-react/core";
-import {fansNFTFactoryAddr } from 'utils/config';
+import { fansNFTFactoryAddr } from 'utils/config';
 import copy from 'copy-to-clipboard';
 import { useRouter } from 'next/router';
 import { getImageInfo } from 'utils/resolveIPFS';
-import { useNetwork } from 'wagmi'
+import { useAccount, useConnect, useNetwork, useContractRead, useContractReads } from 'wagmi'
 
 const FansNFTContractList: FC = () => {
-  const { account, library: web3, chainId } = useWeb3React();
+  const { address: account } = useAccount();
+  const { chain } = useNetwork();
   
   const hoverTrColor = useColorModeValue('gray.100', 'gray.700');
   const { isOpen, onOpen, onClose } = useDisclosure()
 
+  const [fansNFTFactoryAddress, setFansNFTFactoryAddress] = useState<string>('');
+  const [fansNFTLength, setFansNFTLength] = useState<number>(0);
+  const [fansNFTQueryList, setFansNFTQueryList] = useState<any[]>([]);
+  const [fansNFTReadList, setFansNFTReadList] = useState<any[]>([]);
   const [fansNFTList, setFansNFTList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [fansNFTFactory, setFansNFTFactory] =useState<any>(null);
+  const [fansNFTFactory, setFansNFTFactory] = useState<any>(null);
   const [nftAddr, setNFTAddr] = useState<string>('');
+  const [tokenUriReadList, setTokenUriReadList] = useState<any[]>([]);
 
   const toast = useToast();
   const router = useRouter();
@@ -58,78 +64,178 @@ const FansNFTContractList: FC = () => {
   const filteredAddr: Record<string, boolean> = {}
 
   useEffect(() => {
-    if (web3 != null) {
-      setFansNFTFactory(new web3.eth.Contract(FansNFTFactory, fansNFTFactoryAddr[chainId as number]));
+    if (chain != null) {        
+      setFansNFTFactoryAddress(fansNFTFactoryAddr[chain.id as number])
     }
-  }, [web3])
+  }, [chain])
 
-  useEffect(() => {
-    if (fansNFTFactory != null) {
-      getFansNFTList();
-    }
-  }, [fansNFTFactory])
-
-  const getFansNFTList = () => {
-    let totalLength = 0;
-    let contractFunc = fansNFTFactory.methods['getFansNFTLength'];        
-    contractFunc().call({from: account}).then((length: number) => {
-      console.log(length);
-      totalLength = length;
-      const nftList: any[] = [];
-      contractFunc = fansNFTFactory.methods['fansNFTList'];
+  useContractRead({
+    address: fansNFTFactoryAddress,
+    abi: FansNFTFactoryAbi,
+    functionName: 'getFansNFTLength',
+    //watch: true,
+    enabled: fansNFTFactoryAddress != "",
+    onSuccess(length: number) {
+      console.log('getFansNFTLength', length);
+      setFansNFTLength(length)
+      const nftQueryList = []
       for (let i = 0; i < length; i++) {
-        contractFunc(i).call({from: account}).then((fansNFTAddr: string) => {
-          console.log(fansNFTAddr);
-          const fansNFTInfo = {symbol: "", address: fansNFTAddr, nftTokenURI: '', nftAddress: '', listedNFTNumber: 0, fansNumber: 0, floorPrice: 0, volumn: 0}
-          const fansNFT = new web3.eth.Contract(FansNFT, fansNFTAddr);
-          fansNFT.methods['symbol']().call({from: account}).then((symbol: string) => {
-          fansNFTInfo.symbol = symbol;
-          fansNFT.methods['nft']().call({from: account}).then((nftAddress: string) => {
-            console.log('nftAddress', nftAddress, "filtered? ", filteredAddr[nftAddress]);
-            if (filteredAddr[nftAddress]) {
-              totalLength--;
-              return;
-            }
-            fansNFTInfo.nftAddress = nftAddress;
-            const nftContract = new web3.eth.Contract(Erc721, nftAddress);
-            nftContract.methods["tokenURI"](1).call({from: account}).then((tokenURI: string) => {
-              console.log('tokenURI', tokenURI);
-              getImageInfo(tokenURI).then((imageInfo: string) => {
-                fansNFTInfo.nftTokenURI = imageInfo;
-                fansNFT.methods['slotId']().call({from: account}).then((slotId: number) => {
-                  console.log('slotId', slotId);
-                  fansNFTInfo.listedNFTNumber = slotId - 1;
-                  fansNFT.methods['totalSupply']().call({from: account}).then((totalSupply: number) => {
-                    console.log('totalSupply', totalSupply);
-                    fansNFTInfo.fansNumber = totalSupply;
-                    nftList.push(fansNFTInfo);
-                    if (nftList.length - totalLength === 0) {
-                      setFansNFTList(nftList);
-                    }
-                  })
-                })
-              });
-            }).catch((err: any) => {
-              console.log("Failed with error: " + err);
-              fansNFT.methods['slotId']().call({from: account}).then((slotId: number) => {
-                console.log('slotId', slotId);
-                fansNFTInfo.listedNFTNumber = slotId - 1;
-                fansNFT.methods['totalSupply']().call({from: account}).then((totalSupply: number) => {
-                  console.log('totalSupply', totalSupply);
-                  fansNFTInfo.fansNumber = totalSupply;
-                  nftList.push(fansNFTInfo);
-                  if (nftList.length - totalLength === 0) {
-                    setFansNFTList(nftList);
-                  }
-                })
-              })
-            });;
-          })
-          });
+        nftQueryList.push({
+          address: fansNFTFactoryAddress,
+          abi: FansNFTFactoryAbi,
+          functionName: 'fansNFTList',
+          args: [i]
+        })
+      }
+      setFansNFTQueryList(nftQueryList)
+    },
+    onError(error) {
+      console.log('Error', error)
+    },
+  })
+
+  useContractReads({
+    contracts: fansNFTQueryList,
+    enabled: fansNFTQueryList.length > 0,
+    onSuccess(results: string[]) {
+      console.log('results', results)
+      const nftReadList = []
+      results.map((result: any) => {
+        const nftInfo = {address: result.result, abi: FansNFTAbi};
+
+        nftReadList.push(...[
+          {
+            ...nftInfo,
+            functionName: 'symbol'
+          },
+          {
+            ...nftInfo,
+            functionName: 'nft'
+          },
+          {
+            ...nftInfo,
+            functionName: 'slotId'
+          },
+          {
+            ...nftInfo,
+            functionName: 'totalSupply'
+          }])
+      })
+      setFansNFTReadList(nftReadList)
+    },
+    onError(error) {
+      console.log('Error', error)
+    },
+  })
+
+  useContractReads({
+    contracts: fansNFTReadList,
+    enabled: fansNFTReadList.length > 0,
+    onSuccess(results: any[]) {
+      console.log('fansNFTReadList results', results)
+      const nftList: any[] = [];
+      const tokenUriList = []
+      for (let i = 0; i < results.length; i += 4) {
+        const oneFansNFTInfo = results.slice(i, i + 4);        
+        const nftInfo = {symbol: oneFansNFTInfo[0].result, 
+                         nftAddress: oneFansNFTInfo[1].result, 
+                         listedNFTNumber: Number(oneFansNFTInfo[2].result) - 1, 
+                         fansNumber: Number(oneFansNFTInfo[3].result)}
+        
+        nftList.push({...nftInfo, address: fansNFTReadList[i].address, nftTokenURI: '', floorPrice: 0, volumn: 0});
+        tokenUriList.push({
+          address: nftInfo.nftAddress,
+          abi: Erc721Abi,
+          functionName: 'tokenURI',
+          args: [1]
         });
       }
-    });
-  }
+      setFansNFTList(nftList);
+      setTokenUriReadList(tokenUriList);
+    },
+    onError(error) {
+      console.log('Error', error)
+    },
+  })
+
+  useContractReads({
+    contracts: tokenUriReadList,
+    enabled: tokenUriReadList.length > 0,
+    onSuccess(results: any[]) {
+      console.log('tokenUriReadList results', results)
+      results.map((result: any, index: number) => {
+        const nftTokenURI = result.result;
+        getImageInfo(nftTokenURI).then((imageInfo: string) => {
+          fansNFTList[index].nftTokenURI = imageInfo;
+        });
+      })
+    },
+    onError(error) {
+      console.log('Error', error)
+    },
+  })
+
+  // const getFansNFTList = () => {
+  //   let totalLength = 0;
+  //   let contractFunc = fansNFTFactory.methods['getFansNFTLength'];        
+  //   contractFunc().call({from: account}).then((length: number) => {
+  //     console.log(length);
+  //     totalLength = length;
+  //     const nftList: any[] = [];
+  //     contractFunc = fansNFTFactory.methods['fansNFTList'];
+  //     for (let i = 0; i < length; i++) {
+  //       contractFunc(i).call({from: account}).then((fansNFTAddr: string) => {
+  //         console.log(fansNFTAddr);
+  //         const fansNFTInfo = {symbol: "", address: fansNFTAddr, nftTokenURI: '', nftAddress: '', listedNFTNumber: 0, fansNumber: 0, floorPrice: 0, volumn: 0}
+  //         const fansNFT = new web3.eth.Contract(FansNFTAbi, fansNFTAddr);
+  //         fansNFT.methods['symbol']().call({from: account}).then((symbol: string) => {
+  //         fansNFTInfo.symbol = symbol;
+  //         fansNFT.methods['nft']().call({from: account}).then((nftAddress: string) => {
+  //           // console.log('nftAddress', nftAddress, "filtered? ", filteredAddr[nftAddress]);
+  //           // if (filteredAddr[nftAddress]) {
+  //           //   totalLength--;
+  //           //   return;
+  //           // }
+  //           fansNFTInfo.nftAddress = nftAddress;
+  //           const nftContract = new web3.eth.Contract(Erc721, nftAddress);
+  //           nftContract.methods["tokenURI"](1).call({from: account}).then((tokenURI: string) => {
+  //             console.log('tokenURI', tokenURI);
+  //             getImageInfo(tokenURI).then((imageInfo: string) => {
+  //               fansNFTInfo.nftTokenURI = imageInfo;
+  //               fansNFT.methods['slotId']().call({from: account}).then((slotId: number) => {
+  //                 console.log('slotId', slotId);
+  //                 fansNFTInfo.listedNFTNumber = slotId - 1;
+  //                 fansNFT.methods['totalSupply']().call({from: account}).then((totalSupply: number) => {
+  //                   console.log('totalSupply', totalSupply);
+  //                   fansNFTInfo.fansNumber = totalSupply;
+  //                   nftList.push(fansNFTInfo);
+  //                   if (nftList.length - totalLength === 0) {
+  //                     setFansNFTList(nftList);
+  //                   }
+  //                 })
+  //               })
+  //             });
+  //           }).catch((err: any) => {
+  //             console.log("Failed with error: " + err);
+  //             fansNFT.methods['slotId']().call({from: account}).then((slotId: number) => {
+  //               console.log('slotId', slotId);
+  //               fansNFTInfo.listedNFTNumber = slotId - 1;
+  //               fansNFT.methods['totalSupply']().call({from: account}).then((totalSupply: number) => {
+  //                 console.log('totalSupply', totalSupply);
+  //                 fansNFTInfo.fansNumber = totalSupply;
+  //                 nftList.push(fansNFTInfo);
+  //                 if (nftList.length - totalLength === 0) {
+  //                   setFansNFTList(nftList);
+  //                 }
+  //               })
+  //             })
+  //           });;
+  //         })
+  //         });
+  //       });
+  //     }
+  //   });
+  // }
 
   const createFansNFT = () => {
     const contractFunc = fansNFTFactory.methods['buildFansNFT']; 
@@ -197,7 +303,8 @@ const FansNFTContractList: FC = () => {
               </Thead>
               <Tbody>
                 {fansNFTList?.map((fansNFT, key) => (
-                  <Tr key={`${fansNFT.address}-${key}-tr`} _hover={{ bgColor: hoverTrColor }} cursor="pointer" onClick={() => router.push(`/fansnft/${fansNFT.address}/kol721NFTList?symbol=${fansNFT.symbol}`)}>      
+                  <Tr key={`${fansNFT.address}-${key}-tr`} _hover={{ bgColor: hoverTrColor }} cursor="pointer" 
+                      onClick={() => router.push(`/fansnft/${fansNFT.address}/kol721NFTList?symbol=${fansNFT.symbol}&nft=${fansNFT.nftAddress}&slotId=${fansNFT.listedNFTNumber}`)}>      
                     <Td>                      
                       <Avatar
                         size='xl'

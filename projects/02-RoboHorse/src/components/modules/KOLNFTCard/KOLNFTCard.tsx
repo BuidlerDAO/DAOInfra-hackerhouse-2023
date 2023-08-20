@@ -20,12 +20,15 @@ import {
   Avatar,
 } from '@chakra-ui/react';
 import { QuestionOutlineIcon } from '@chakra-ui/icons'
+import FansNFTAbi from 'abi/fansNFT.json';
 import { Eth } from '@web3uikit/icons';
 import { FaTwitter, FaUsers, FaEthereum } from 'react-icons/fa';
 import { FcOvertime } from 'react-icons/fc';
 import React, { FC, useEffect, useState} from 'react';
 import { useWeb3React } from "@web3-react/core";
 import { useRouter } from 'next/router';
+import { useAccount, useConnect, useNetwork, useContractRead, useContractReads } from 'wagmi'
+import { prepareWriteContract, writeContract, waitForTransaction } from '@wagmi/core'
 
 
 type KOLNFTInfo = {
@@ -37,16 +40,19 @@ type KOLNFTInfo = {
   image: string;
   symbol: string;
   symbolOfFansNFT: string;
-  fansNFT: any;
+  fansNFTAddress: string;
   twitterId: string;
 }
 
-const KOLNFTCard: FC<KOLNFTInfo> = ({ nftOwner, nft721Id, endTime, maxFansNumber, slotId, image, symbol, symbolOfFansNFT, twitterId, fansNFT }) => {
+const KOLNFTCard: FC<KOLNFTInfo> = ({ nftOwner, nft721Id, endTime, maxFansNumber, slotId, image, symbol, symbolOfFansNFT, twitterId, fansNFTAddress }) => {
   const bgColor = useColorModeValue('none', 'gray.700');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const descBgColor = useColorModeValue('gray.100', 'gray.600');
 
-  const { account, library: web3 } = useWeb3React();
+  console.log('image', image, slotId, endTime)
+
+  const { address: account } = useAccount();
+  const { chain } = useNetwork();
 
   const router = useRouter();
   const modal1 = useDisclosure();
@@ -54,25 +60,51 @@ const KOLNFTCard: FC<KOLNFTInfo> = ({ nftOwner, nft721Id, endTime, maxFansNumber
   const [isRedeeming, setIsRedeeming] = useState<boolean>(false);
   const [isComfirming, setIsComfirming] = useState<boolean>(false);
   const [totalSupplyInSlot, setTotalSupplyInSlot] = useState<number>(0);
-  const [leftDays, setLeftDays] = useState<number>(0);
+  const [leftDays, setLeftDays] = useState<number>(parseInt(((endTime - Date.parse(new Date().toString()) / 1000) / (3600 * 24)).toString()));
   const [days, setDays] =useState<number>(0);
 
   const toast = useToast();
   const initialRef = React.useRef(null);
   twitterId = twitterId.startsWith('@') ? twitterId.substr(1) : twitterId; 
 
-  useEffect(() => {
-    console.log(endTime)
-    setLeftDays(parseInt(((endTime - Date.parse(new Date().toString()) / 1000) / (3600 * 24)).toString()));
-    if (fansNFT != null) {
-      const contractFunc = fansNFT.methods['tokenSupplyInSlot']; 
-      contractFunc(slotId).call().then((totalSupply: number) => {
-        setTotalSupplyInSlot(totalSupply);
+  useContractRead({
+    address: fansNFTAddress,
+    abi: FansNFTAbi,
+    functionName: 'tokenSupplyInSlot',
+    enabled: fansNFTAddress != "",
+    args: [slotId],
+    onSuccess(totalSupply: number) {
+      setTotalSupplyInSlot(totalSupply);
+    },
+    onError(error) {
+      console.log('Error', error)
+    },
+  })
+
+  const redeem = async () => {
+    try {
+      const { hash } = await writeContract({
+        address: fansNFTAddress,
+        abi: FansNFTAbi,
+        functionName: 'redeemNFT',
+        args: [nft721Id],
+      })
+      setIsRedeeming(true);
+      const data = await waitForTransaction({ hash })
+      setIsRedeeming(false);
+    } catch (error) {
+      setIsRedeeming(false);
+      toast({
+        title: 'Failed',
+        description: "Redeem NFT failed",
+        status: 'error',
+        position: 'bottom-right',
+        isClosable: true,
       });
     }
-  }, [fansNFT]);
-
-  const redeem = () => {
+  }
+   
+  const redeem1 = () => {
     const contractFunc = fansNFT.methods['redeemNFT']; 
     const data = contractFunc(nft721Id).encodeABI();
     const tx = {
@@ -105,7 +137,33 @@ const KOLNFTCard: FC<KOLNFTInfo> = ({ nftOwner, nft721Id, endTime, maxFansNumber
     });
   }
 
-  const extendEndTime = () => {
+  const extendEndTime = async () => {
+    const newEndTime = days * 3600 * 24 + parseInt(endTime.toString());
+    try {
+      const { hash } = await writeContract({
+        address: fansNFTAddress,
+        abi: FansNFTAbi,
+        functionName: 'extendEndTime',
+        args: [slotId, newEndTime],
+      })
+      setIsComfirming(true);
+      const data = await waitForTransaction({ hash })
+      setIsComfirming(false);
+      endTime = newEndTime;
+      setLeftDays(parseInt(((newEndTime - Date.parse(new Date().toString()) / 1000) / (3600 * 24)).toString()));
+    } catch (error) {
+      setIsComfirming(false);
+      toast({
+        title: 'Failed',
+        description: "Fail to extend end time: " + error.toString(),
+        status: 'error',
+        position: 'bottom-right',
+        isClosable: true,
+      });
+    }
+  }
+
+  const extendEndTime1 = () => {
     const newEndTime = days * 3600 * 24 + parseInt(endTime.toString());
     const contractFunc = fansNFT.methods['extendEndTime']; 
     const data = contractFunc(slotId, newEndTime).encodeABI();
@@ -172,7 +230,7 @@ const KOLNFTCard: FC<KOLNFTInfo> = ({ nftOwner, nft721Id, endTime, maxFansNumber
                   colorScheme='pink' 
                   variant='outline' 
                   leftIcon={<FaUsers />}
-                  onClick={() => router.push(`/fansnft/${fansNFT._address}/kolnftlist/${slotId}/fansNFTList?symbol=${symbolOfFansNFT}`)}>
+                  onClick={() => router.push(`/fansnft/${fansNFTAddress}/kolnftlist/${slotId}/fansNFTList?symbol=${symbolOfFansNFT}`)}>
                     {totalSupplyInSlot} / {maxFansNumber}
                 </Button>
               </Tooltip>
@@ -206,7 +264,7 @@ const KOLNFTCard: FC<KOLNFTInfo> = ({ nftOwner, nft721Id, endTime, maxFansNumber
             alt={'KOLNFT'}   
             objectFit="fill"
             cursor="pointer"
-            onClick={() => router.push(`/fansnft/${fansNFT._address}/kolnftlist/${slotId}/fansNFTList?symbol=${symbolOfFansNFT}`)}
+            onClick={() => router.push(`/fansnft/${fansNFTAddress}/kolnftlist/${slotId}/fansNFTList?symbol=${symbolOfFansNFT}`)}
           />
         </Box>
       </HStack>

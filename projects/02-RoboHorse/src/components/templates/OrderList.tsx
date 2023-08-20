@@ -32,18 +32,19 @@ import {
   } from '@chakra-ui/react';
   import React, { FC, useEffect, useState } from 'react';
   import { getEllipsisTxt } from 'utils/format';
-  import MarketHelper from 'abi/marketHelper.json';
-  import NFT3525Market from 'abi/erc3525Market.json';
+  import MarketHelperAbi from 'abi/marketHelper.json';
+  import NFT3525MarketAbi from 'abi/erc3525Market.json';
   import { useWeb3React } from "@web3-react/core";
   import { marketHelperAddr } from 'utils/config';
   import { isEmptyObj } from 'utils/utils';
   import { useRouter } from 'next/router';
   import { getImageInfo } from 'utils/resolveIPFS';
   import BigNumber from 'bignumber.js';
-  
+  import { useAccount, useConnect, useNetwork, useContractRead } from 'wagmi'
   
   const OrderList: FC = () => {
-    const { account, library: web3, chainId } = useWeb3React();
+    const { address: account } = useAccount();
+    const { chain } = useNetwork();
   
     const hoverTrColor = useColorModeValue('gray.100', 'gray.700');
     const { isOpen, onOpen, onClose } = useDisclosure();
@@ -56,6 +57,9 @@ import {
     const [amount, setAmount] = useState<number>(1);
     const [orderInfo, setOrderInfo] = useState<any>(null);
     const [marketHelper, setMarketHelper] =useState<any>(null);
+    const [marketAddress, setMarketAddress] = useState<string>("")
+    const [marketHelperAddress, setMarketHelperAddress] = useState<string>("")
+    const [orderNumber, setOrderNumber] = useState<number>(0);
   
     const toast = useToast();
     const router = useRouter();
@@ -64,33 +68,68 @@ import {
     const finalRef = React.useRef(null)
   
     useEffect(() => {
-      if (!isEmptyObj(web3)) {
+      if (chain != null) {        
         const { marketAddress } = router.query;
-        setMarket(new web3.eth.Contract(NFT3525Market, marketAddress));
-        setMarketHelper(new web3.eth.Contract(MarketHelper, marketHelperAddr[chainId as number]));
-      }
-    }, [web3])
-  
-    useEffect(() => {
-      if (!isEmptyObj(market)) {
-        getOrders();
+        setMarketHelperAddress(marketHelperAddr[chain.id as number])
+        setMarketAddress(marketAddress)
+
         const { tokenURI } = router.query;
         getImageInfo(tokenURI as string).then((image: string) => {
             setNFTImage(image);
         })
       }
-    }, [market])
+    }, [chain])
+
+    useContractRead({
+      address: marketAddress,
+      abi: NFT3525MarketAbi,
+      functionName: 'getOrderCount',
+      watch: true,
+      onSuccess(length: number) {
+        console.log('getOrderCount', length);
+        setOrderNumber(length)
+      },
+      onError(error) {
+        console.log('Error', error)
+      },
+    })
+
+    useContractRead({
+      address: marketHelperAddress,
+      abi: MarketHelperAbi,
+      functionName: 'getOrders',
+      enabled: orderNumber > 0,
+      watch: true,
+      args: [marketAddress, 0, orderNumber, false],
+      onSuccess(orderList: any[]) {
+        console.log('getOrders', orderList);
+        setOrderList(orderList);
+      },
+      onError(error) {
+        console.log('Error', error)
+      },
+    })
   
-    const getOrders = () => {
-      let totalLength = 0;     
-      market.methods['getOrderCount']().call({from: account}).then((length: number) => {
-        totalLength = length;
-        marketHelper.methods['getOrders'](market._address, 0, length, false).call({from: account}).then((orderList: any[]) => {
-            console.log(orderList);
-            setOrderList(orderList);
-        })
-      })
-    }
+    // useEffect(() => {
+    //   if (!isEmptyObj(market)) {
+    //     getOrders();
+    //     const { tokenURI } = router.query;
+    //     getImageInfo(tokenURI as string).then((image: string) => {
+    //         setNFTImage(image);
+    //     })
+    //   }
+    // }, [market])
+  
+    // const getOrders = () => {
+    //   let totalLength = 0;     
+    //   market.methods['getOrderCount']().call({from: account}).then((length: number) => {
+    //     totalLength = length;
+    //     marketHelper.methods['getOrders'](market._address, 0, length, false).call({from: account}).then((orderList: any[]) => {
+    //         console.log(orderList);
+    //         setOrderList(orderList);
+    //     })
+    //   })
+    // }
 
     const buy = (orderId: number, amount: number, value: string, bComfirm: boolean) => {
       const contractFunc = market.methods['buy'];     
@@ -166,7 +205,7 @@ import {
                   {orderList?.map((order, key) => (
                     <Tr key={`${order.id}-${key}-tr`} _hover={{ bgColor: hoverTrColor }}>      
                       <Td>                      
-                        {order.id}
+                        {Number(order.id)}
                       </Td>                
                       <Td>
                         {getEllipsisTxt(order.seller)}

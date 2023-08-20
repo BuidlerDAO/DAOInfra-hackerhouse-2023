@@ -3,6 +3,7 @@ import {
   getDefaultWallets,
   RainbowKitProvider,
   lightTheme,
+  darkTheme
 } from '@rainbow-me/rainbowkit';
 import { configureChains, createConfig, WagmiConfig } from 'wagmi';
 import {
@@ -28,7 +29,7 @@ export const useWagmi = () => {
   return useContext(WagmiContext);
 };
 
-const theme = lightTheme();
+const theme = darkTheme();
 
 // theme.colors.accentColor = '#6667ab';
 // theme.colors.profileForeground = '#373741';
