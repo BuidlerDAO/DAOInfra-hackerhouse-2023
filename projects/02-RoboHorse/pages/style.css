@@ -1,0 +1,41 @@
+.table-tiny th,
+.table-tiny td {
+  width: 50px;
+  text-align: center;
+}
+
+/* table {
+  margin-top: 20px;
+  width: 80%;
+} 
+*/
+body {
+  /* padding: 20px 20px 0px; */
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.logo {
+  height: 32px;
+  margin: 16px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.site-layout .site-layout-background{
+  background: #fff;
+}
+
+[data-theme="dark"] .site-layout .site-layout-background{
+  background: #2d0303;
+}
+
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  margin: auto;
+  padding: 24px 0;
+  max-width: 720px;
+  min-height: 332px;
+  overflow-y: auto;
+}

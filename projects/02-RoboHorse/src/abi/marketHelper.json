@@ -1,0 +1,129 @@
+[
+	{
+		"inputs": [
+			{
+				"internalType": "contract MarketFactory",
+				"name": "marketFactory",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "fromIndex",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "toIndex",
+				"type": "uint256"
+			}
+		],
+		"name": "getMarketList",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "address",
+						"name": "nft3525Addr",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "marketAddr",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "kolAddr",
+						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "nftTokenURI",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "twitterId",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "floorPrice",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "totalVolumn",
+						"type": "uint256"
+					}
+				],
+				"internalType": "struct MarketHelper.MarketInfo[]",
+				"name": "marketInfoList",
+				"type": "tuple[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "contract ERC3525Market",
+				"name": "market",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "startNodeId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "length",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "descending",
+				"type": "bool"
+			}
+		],
+		"name": "getOrders",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "seller",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "price",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bool",
+						"name": "bPacked",
+						"type": "bool"
+					}
+				],
+				"internalType": "struct ERC3525Market.OrderInfo[]",
+				"name": "orderList",
+				"type": "tuple[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]
